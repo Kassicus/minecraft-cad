@@ -3,7 +3,6 @@
  * Initializes and coordinates all systems
  */
 
-import { MemoryManager } from './src/core/MemoryManager.js';
 import { BlockDataManager } from './src/core/BlockDataManager.js';
 import { AppStateManager } from './src/core/AppStateManager.js';
 import { ViewManager } from './src/rendering/ViewManager.js';
@@ -11,6 +10,7 @@ import { CameraController } from './src/input/CameraController.js';
 import { InputController } from './src/input/InputController.js';
 import { ToolManager } from './src/tools/ToolManager.js';
 import { UIManager } from './src/ui/UIManager.js';
+import { coordinateSystem } from './src/utils/CoordinateSystem.js';
 
 class MinecraftCAD {
   constructor() {
@@ -18,9 +18,11 @@ class MinecraftCAD {
     this.isRunning = false;
     
     // Core systems
-    this.memoryManager = null;
     this.blockDataManager = null;
     this.appStateManager = null;
+    
+    // Coordinate system
+    this.coordinateSystem = coordinateSystem;
     
     // Rendering
     this.viewManager = null;
@@ -114,11 +116,8 @@ class MinecraftCAD {
   initializeCore() {
     console.log('Initializing core systems...');
     
-    // Memory management
-    this.memoryManager = new MemoryManager();
-    
     // Block data management
-    this.blockDataManager = new BlockDataManager(this.memoryManager);
+    this.blockDataManager = new BlockDataManager();
     
     // Application state management
     this.appStateManager = new AppStateManager();
@@ -178,6 +177,8 @@ class MinecraftCAD {
   connectSystems() {
     console.log('Connecting systems...');
     
+    console.log('Using coordinate system with block size:', this.coordinateSystem.getBlockSize());
+    
     // Connect tool manager to other systems
     this.toolManager.connect(
       this.appStateManager,
@@ -191,7 +192,8 @@ class MinecraftCAD {
       this.blockDataManager,
       this.viewManager,
       this.toolManager,
-      this.inputController
+      this.inputController,
+      this.cameraController
     );
     
     // Set up event listeners for render requests
@@ -479,7 +481,6 @@ class MinecraftCAD {
         fps: this.performance.currentFPS,
         isRunning: this.isRunning
       },
-      memory: this.memoryManager ? this.memoryManager.getStats() : null,
       blocks: this.blockDataManager ? this.blockDataManager.getStats() : null,
       tools: {
         available: Array.from(this.tools.keys()),
@@ -548,9 +549,7 @@ class MinecraftCAD {
       this.blockDataManager.clear();
     }
     
-    if (this.memoryManager) {
-      this.memoryManager.dispose();
-    }
+    // Memory manager disposal removed
     
     console.log('MinecraftCAD disposed');
   }

@@ -6,6 +6,7 @@
 import { BaseRenderer } from './BaseRenderer.js';
 import { HatchPatternManager } from './HatchPatternManager.js';
 import { MathUtils } from '../utils/MathUtils.js';
+import { coordinateSystem } from '../utils/CoordinateSystem.js';
 
 export class TopViewRenderer extends BaseRenderer {
   constructor(canvas) {
@@ -82,60 +83,22 @@ export class TopViewRenderer extends BaseRenderer {
   drawGrid() {
     if (!this.context) return;
     
-    const ctx = this.context;
-    const bounds = this.calculateCullingBounds();
-    const blockSize = this.settings.blockSize * this.camera.zoom;
-    
-    // Skip grid if too small to see
-    if (blockSize < 2) return;
-    
-    ctx.save();
-    
-    // Main grid lines
-    ctx.strokeStyle = 'rgba(100, 181, 246, 0.1)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    
-    // Vertical lines
-    for (let x = bounds.minX; x <= bounds.maxX; x++) {
-      const screenX = this.worldToScreen(x * this.settings.blockSize, 0, 0).x;
-      ctx.moveTo(screenX, 0);
-      ctx.lineTo(screenX, this.viewportBounds.height);
-    }
-    
-    // Horizontal lines
-    for (let y = bounds.minY; y <= bounds.maxY; y++) {
-      const screenY = this.worldToScreen(0, y * this.settings.blockSize, 0).y;
-      ctx.moveTo(0, screenY);
-      ctx.lineTo(this.viewportBounds.width, screenY);
-    }
-    
-    ctx.stroke();
-    
-    // Major grid lines (every 10 units)
-    if (this.settings.showMajorGrid && blockSize > 8) {
-      ctx.strokeStyle = 'rgba(100, 181, 246, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      
-      // Vertical major lines
-      for (let x = Math.floor(bounds.minX / 10) * 10; x <= bounds.maxX; x += 10) {
-        const screenX = this.worldToScreen(x * this.settings.blockSize, 0, 0).x;
-        ctx.moveTo(screenX, 0);
-        ctx.lineTo(screenX, this.viewportBounds.height);
+    // Use the unified coordinate system for grid rendering
+    // Draw grid using coordinate system
+    coordinateSystem.drawGrid(
+      this.context,
+      this.camera,
+      this.viewportBounds.width,
+      this.viewportBounds.height,
+      {
+        showGrid: this.settings.showGrid,
+        showMajorGrid: this.settings.showMajorGrid,
+        gridColor: 'rgba(100, 181, 246, 0.1)',
+        majorGridColor: 'rgba(100, 181, 246, 0.3)',
+        majorGridInterval: 10,
+        minGridSize: 2
       }
-      
-      // Horizontal major lines
-      for (let y = Math.floor(bounds.minY / 10) * 10; y <= bounds.maxY; y += 10) {
-        const screenY = this.worldToScreen(0, y * this.settings.blockSize, 0).y;
-        ctx.moveTo(0, screenY);
-        ctx.lineTo(this.viewportBounds.width, screenY);
-      }
-      
-      ctx.stroke();
-    }
-    
-    ctx.restore();
+    );
   }
 
   /**
@@ -144,7 +107,7 @@ export class TopViewRenderer extends BaseRenderer {
   drawBlocksAtLevel(blockData, level, cullingBounds) {
     if (!this.context) return;
     
-    const blocks = blockData.getBlocksAtLevel(level);
+    const blocks = blockData ? blockData.getBlocksAtLevel(level) : [];
     const blockSize = this.settings.blockSize * this.camera.zoom;
     
     // Skip if blocks would be too small to see
@@ -160,11 +123,7 @@ export class TopViewRenderer extends BaseRenderer {
         continue;
       }
       
-      const screenPos = this.worldToScreen(
-        block.x * this.settings.blockSize,
-        block.y * this.settings.blockSize,
-        0
-      );
+      const screenPos = this.gridToScreen(block.x, block.y);
       
       // Draw block with pattern
       this.drawBlock(ctx, screenPos.x, screenPos.y, blockSize, block.type, 1.0);
@@ -193,7 +152,8 @@ export class TopViewRenderer extends BaseRenderer {
     if (currentLevel < 49) levelsToShow.push(currentLevel + 1);
     
     for (const level of levelsToShow) {
-      const blocks = blockData.getBlocksAtLevel(level);
+      // Block rendering removed - starting fresh
+      const blocks = [];
       
       for (const block of blocks) {
         // Cull blocks outside viewport
@@ -202,11 +162,7 @@ export class TopViewRenderer extends BaseRenderer {
           continue;
         }
         
-        const screenPos = this.worldToScreen(
-          block.x * this.settings.blockSize,
-          block.y * this.settings.blockSize,
-          0
-        );
+        const screenPos = this.gridToScreen(block.x, block.y);
         
         // Draw ghost block with reduced alpha
         this.drawBlock(ctx, screenPos.x, screenPos.y, blockSize, block.type, this.settings.ghostBlockAlpha);
@@ -321,41 +277,28 @@ export class TopViewRenderer extends BaseRenderer {
    * Convert world coordinates to screen coordinates
    */
   worldToScreen(worldX, worldY, worldZ) {
-    const screenX = worldX * this.camera.zoom + this.camera.offsetX;
-    const screenY = worldY * this.camera.zoom + this.camera.offsetY;
-    
-    return { x: screenX, y: screenY };
+    return coordinateSystem.worldToScreen(worldX, worldY, this.camera);
   }
 
   /**
    * Convert screen coordinates to world coordinates
    */
   screenToWorld(screenX, screenY) {
-    const worldX = (screenX - this.camera.offsetX) / this.camera.zoom;
-    const worldY = (screenY - this.camera.offsetY) / this.camera.zoom;
-    
-    return { x: worldX, y: worldY };
+    return coordinateSystem.screenToWorld(screenX, screenY, this.camera);
   }
 
   /**
    * Convert screen coordinates to grid coordinates
    */
   screenToGrid(screenX, screenY) {
-    const world = this.screenToWorld(screenX, screenY);
-    const blockSize = 20;
-    return {
-      x: Math.floor(world.x / blockSize),
-      y: Math.floor(world.y / blockSize)
-    };
+    return coordinateSystem.screenToGrid(screenX, screenY, this.camera);
   }
 
   /**
    * Convert grid coordinates to screen coordinates
    */
   gridToScreen(gridX, gridY) {
-    const worldX = gridX * this.settings.blockSize;
-    const worldY = gridY * this.settings.blockSize;
-    return this.worldToScreen(worldX, worldY, 0);
+    return coordinateSystem.gridToScreen(gridX, gridY, this.camera);
   }
 
   /**

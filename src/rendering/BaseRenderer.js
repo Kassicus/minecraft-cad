@@ -3,6 +3,8 @@
  * Abstract base class for all view renderers
  */
 
+// Removed coordinate system import - starting fresh
+
 export class BaseRenderer {
   constructor(canvas) {
     if (new.target === BaseRenderer) {
@@ -152,18 +154,8 @@ export class BaseRenderer {
   calculateCullingBounds() {
     const margin = 50; // Pixel margin for culling
     
-    const topLeft = this.screenToWorld(-margin, -margin);
-    const bottomRight = this.screenToWorld(
-      this.viewportBounds.width + margin,
-      this.viewportBounds.height + margin
-    );
-    
-    return {
-      minX: Math.floor(topLeft.x / this.settings.blockSize),
-      minY: Math.floor(topLeft.y / this.settings.blockSize),
-      maxX: Math.ceil(bottomRight.x / this.settings.blockSize),
-      maxY: Math.ceil(bottomRight.y / this.settings.blockSize)
-    };
+    // Culling bounds calculation removed - will be rebuilt with new system
+    return { minX: 0, minY: 0, maxX: 10, maxY: 10 };
   }
 
   /**

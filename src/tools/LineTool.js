@@ -65,23 +65,12 @@ export class LineTool extends BaseTool {
   }
 
   /**
-   * Draw the actual line of blocks
+   * Draw the actual line - REMOVED BLOCK PLACEMENT
    */
   drawLine() {
-    if (!this.startPoint || !this.endPoint) return;
-
-    const blocks = this.calculateLineBlocks(this.startPoint, this.endPoint);
-    
-    // Add blocks to the data manager
-    blocks.forEach(pos => {
-      this.blockDataManager.setBlock(pos.x, pos.y, pos.z, this.currentBlockType);
-    });
-
-    // Clear preview
+    // Block placement removed - tool disabled until new system is implemented
+    console.log('Line tool disabled - block placement system removed');
     this.clearPreview();
-    
-    // Trigger re-render
-    this.notifyChange();
   }
 
   /**

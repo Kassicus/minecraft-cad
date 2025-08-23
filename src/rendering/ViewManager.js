@@ -528,7 +528,12 @@ export class ViewManager {
       return renderer.screenToWorld(screenX, screenY);
     }
     
-    // Fallback for renderers without screenToWorld method
+    // Fallback: use camera controller directly if available
+    if (this.appStateManager && this.appStateManager.cameraController) {
+      return this.appStateManager.cameraController.screenToWorld(screenX, screenY, this.currentView);
+    }
+    
+    // Last resort fallback
     return { x: screenX, y: screenY };
   }
 
@@ -544,6 +549,9 @@ export class ViewManager {
       const cameraState = this.appStateManager.cameraController.getCameraForView(this.currentView);
       if (cameraState && renderer.updateCamera) {
         renderer.updateCamera(cameraState);
+      } else if (cameraState) {
+        // Direct camera assignment if updateCamera method doesn't exist
+        renderer.camera = cameraState;
       }
     }
   }

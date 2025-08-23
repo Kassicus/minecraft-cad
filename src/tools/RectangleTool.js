@@ -78,10 +78,8 @@ export class RectangleTool extends BaseTool {
       this.calculateFilledRectangleBlocks(this.startPoint, this.endPoint) :
       this.calculateRectangleOutlineBlocks(this.startPoint, this.endPoint);
     
-    // Add blocks to the data manager
-    blocks.forEach(pos => {
-      this.blockDataManager.setBlock(pos.x, pos.y, pos.z, this.currentBlockType);
-    });
+    // Block placement removed - tool disabled until new system is implemented
+    console.log('Rectangle tool disabled - block placement system removed');
 
     // Clear preview
     this.clearPreview();

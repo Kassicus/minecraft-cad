@@ -116,7 +116,8 @@ export class SelectionTool extends BaseTool {
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
-          const blockType = this.blockDataManager.getBlock(x, y, z);
+          // Block data access removed - tool disabled
+          const blockType = null;
           if (blockType) {
             const key = `${x},${y},${z}`;
             this.selectedBlocks.set(key, { x, y, z, type: blockType });
@@ -193,17 +194,8 @@ export class SelectionTool extends BaseTool {
   confirmOperation(worldPos) {
     if (!this.isMoving || this.previewBlocks.length === 0) return;
 
-    if (this.mode === 'move') {
-      // Remove original blocks
-      this.selectedBlocks.forEach(block => {
-        this.blockDataManager.removeBlock(block.x, block.y, block.z);
-      });
-    }
-
-    // Place blocks at new positions
-    this.previewBlocks.forEach(block => {
-      this.blockDataManager.setBlock(block.x, block.y, block.z, block.type);
-    });
+    // Block operations removed - tool disabled until new system is implemented
+    console.log('Selection tool disabled - block placement system removed');
 
     // Update selection to new positions
     this.selectedBlocks.clear();
@@ -225,9 +217,8 @@ export class SelectionTool extends BaseTool {
   deleteSelected() {
     if (this.selectedBlocks.size === 0) return;
 
-    this.selectedBlocks.forEach(block => {
-      this.blockDataManager.removeBlock(block.x, block.y, block.z);
-    });
+    // Block deletion removed - tool disabled
+    console.log('Selection tool disabled - block placement system removed');
 
     const count = this.selectedBlocks.size;
     this.clearSelection();
@@ -247,7 +238,8 @@ export class SelectionTool extends BaseTool {
     // Get all blocks at current level
     for (let x = 0; x < 100; x++) {
       for (let y = 0; y < 100; y++) {
-        const blockType = this.blockDataManager.getBlock(x, y, currentLevel);
+        // Block data access removed - tool disabled
+        const blockType = null;
         if (blockType) {
           const key = `${x},${y},${currentLevel}`;
           this.selectedBlocks.set(key, { x, y, z: currentLevel, type: blockType });

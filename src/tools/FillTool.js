@@ -37,7 +37,9 @@ export class FillTool extends BaseTool {
    * Perform flood fill operation
    */
   performFill(startPos) {
-    const targetType = this.blockDataManager.getBlock(startPos.x, startPos.y, startPos.z);
+    // Block data access removed - tool disabled until new system is implemented
+    console.log('Fill tool disabled - block placement system removed');
+    return;
     const fillType = this.currentBlockType;
     
     // Don't fill if target is same as fill type
@@ -61,10 +63,7 @@ export class FillTool extends BaseTool {
       return; // Nothing to fill
     }
 
-    // Apply the fill
-    blocksToFill.forEach(pos => {
-      this.blockDataManager.setBlock(pos.x, pos.y, pos.z, fillType);
-    });
+    // Block placement removed - tool disabled
 
     // Trigger re-render
     this.notifyChange();
@@ -93,7 +92,8 @@ export class FillTool extends BaseTool {
       visited.add(key);
       
       // Check if this position should be filled
-      const currentType = this.blockDataManager.getBlock(current.x, current.y, current.z);
+      // Block data access removed - returning empty result
+      const currentType = null;
       
       if (currentType !== targetType) {
         continue; // Different type, don't fill

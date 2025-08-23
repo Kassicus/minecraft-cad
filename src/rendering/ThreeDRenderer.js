@@ -375,7 +375,8 @@ export class ThreeDRenderer extends BaseRenderer {
     // Get all blocks
     const allBlocks = [];
     for (let level = 0; level < 50; level++) {
-      const levelBlocks = blockData.getBlocksAtLevel(level);
+      // Block rendering removed - starting fresh
+      const levelBlocks = [];
       allBlocks.push(...levelBlocks);
     }
     

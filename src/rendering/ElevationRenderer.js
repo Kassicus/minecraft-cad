@@ -184,7 +184,8 @@ export class ElevationRenderer extends BaseRenderer {
     
     // Get all blocks and filter for visibility
     for (let level = 0; level < 50; level++) {
-      const levelBlocks = blockData.getBlocksAtLevel(level);
+      // Block rendering removed - starting fresh
+      const levelBlocks = [];
       
       for (const block of levelBlocks) {
         if (this.isBlockVisible(block, cullingBounds)) {
@@ -231,8 +232,9 @@ export class ElevationRenderer extends BaseRenderer {
    */
   sortBlocksByDepth(blocks) {
     return blocks.sort((a, b) => {
-      const depthA = this.getBlockDepth(a);
-      const depthB = this.getBlockDepth(b);
+      // Block depth calculation removed
+      const depthA = 0;
+      const depthB = 0;
       return depthB - depthA; // Back to front
     });
   }
@@ -241,6 +243,8 @@ export class ElevationRenderer extends BaseRenderer {
    * Get the depth of a block for this elevation view
    */
   getBlockDepth(block) {
+    // Block depth calculation removed
+    return 0;
     switch (this.direction) {
       case 'north': return block.y; // Y is depth
       case 'south': return 100 - block.y; // Flipped Y
@@ -277,7 +281,8 @@ export class ElevationRenderer extends BaseRenderer {
     // Calculate depth-based alpha for depth shading
     let alpha = 1.0;
     if (this.settings.showDepthShading) {
-      const depth = this.getBlockDepth(block);
+      // Block depth calculation removed
+      const depth = 0;
       const maxDepth = this.settings.maxDepth;
       const fadeDistance = this.settings.depthFadeDistance;
       
@@ -509,6 +514,8 @@ export class ElevationRenderer extends BaseRenderer {
    * Get the block at screen coordinates
    */
   getBlockAtScreen(screenX, screenY) {
+    // Block detection removed
+    return null;
     return this.screenToGrid(screenX, screenY);
   }
 

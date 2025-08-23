@@ -4,6 +4,7 @@
  */
 
 import { MathUtils } from '../utils/MathUtils.js';
+import { coordinateSystem } from '../utils/CoordinateSystem.js';
 
 export class InputController {
   constructor(appStateManager, viewManager) {
@@ -300,10 +301,11 @@ export class InputController {
   }
 
   /**
-   * Handle middle mouse button (pan)
+   * Handle middle mouse button (pan) - DISABLED
    */
   handleMiddleMouseDown(worldPos, event) {
-    this.gestures.isPanning = true;
+    // Panning disabled - do nothing
+    // this.gestures.isPanning = true;
   }
 
   /**
@@ -317,9 +319,11 @@ export class InputController {
   }
 
   /**
-   * Handle panning gesture
+   * Handle panning gesture - DISABLED
    */
   handlePanning(deltaX, deltaY) {
+    // Panning disabled - do nothing
+    /*
     if (this.cameraController) {
       this.cameraController.pan(deltaX, deltaY);
     }
@@ -330,12 +334,15 @@ export class InputController {
     
     // Trigger re-render
     this.requestRender();
+    */
   }
 
   /**
-   * Detect pan/zoom gestures
+   * Detect pan/zoom gestures - PANNING DISABLED
    */
   detectGestures(deltaX, deltaY) {
+    // Panning disabled - don't detect pan gestures
+    /*
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
     if (!this.gestures.isPanning && distance > this.gestures.panThreshold) {
@@ -343,6 +350,7 @@ export class InputController {
         this.gestures.isPanning = true;
       }
     }
+    */
   }
 
   /**
@@ -503,7 +511,8 @@ export class InputController {
         this.touch.startDistance = currentDistance;
       }
       
-      // Pan
+      // Pan - DISABLED
+      /*
       const deltaX = currentMidpoint.x - this.touch.startMidpoint.x;
       const deltaY = currentMidpoint.y - this.touch.startMidpoint.y;
       
@@ -513,6 +522,7 @@ export class InputController {
         }
         this.touch.startMidpoint = currentMidpoint;
       }
+      */
       
       this.requestRender();
     }
@@ -568,36 +578,22 @@ export class InputController {
   }
 
   getWorldPosition(event) {
-    if (!this.viewManager) return { x: 0, y: 0 };
+    if (!this.cameraController) return { x: 0, y: 0 };
     
-    // Get the current canvas and renderer
-    const currentCanvas = this.viewManager.getCurrentCanvas();
-    const currentRenderer = this.viewManager.getCurrentRenderer();
-    if (!currentCanvas || !currentRenderer) return { x: 0, y: 0 };
+    // Get the current canvas
+    const currentCanvas = this.viewManager ? this.viewManager.getCurrentCanvas() : this.canvas;
+    if (!currentCanvas) return { x: 0, y: 0 };
     
     // Get canvas-relative coordinates
     const rect = currentCanvas.getBoundingClientRect();
     const screenX = event.clientX - rect.left;
     const screenY = event.clientY - rect.top;
     
-    // Direct conversion using renderer's camera state
-    let worldX, worldY;
-    if (currentRenderer.camera) {
-      // Simple inverse transform: world = (screen - offset) / zoom
-      worldX = (screenX - currentRenderer.camera.offsetX) / currentRenderer.camera.zoom;
-      worldY = (screenY - currentRenderer.camera.offsetY) / currentRenderer.camera.zoom;
-    } else {
-      worldX = screenX;
-      worldY = screenY;
-    }
+    // Use coordinate system for transformation
+    const camera = this.cameraController.getCurrentCamera();
+    const worldPos = coordinateSystem.screenToWorld(screenX, screenY, camera);
     
-    console.log('InputController getWorldPosition:', {
-      screen: { x: screenX, y: screenY },
-      camera: currentRenderer.camera,
-      world: { x: worldX, y: worldY }
-    });
-    
-    return { x: worldX, y: worldY };
+    return worldPos;
   }
 
   updateCursorDisplay(worldPos) {
@@ -612,10 +608,10 @@ export class InputController {
   }
 
   worldToGrid(worldPos) {
-    const blockSize = 20;
+    const gridPos = coordinateSystem.worldToGrid(worldPos.x, worldPos.y);
     return {
-      x: Math.floor(worldPos.x / blockSize),
-      y: Math.floor(worldPos.y / blockSize),
+      x: gridPos.x,
+      y: gridPos.y,
       z: this.appStateManager ? this.appStateManager.currentLevel : 0
     };
   }

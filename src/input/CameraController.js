@@ -63,12 +63,26 @@ export class CameraController {
     this.viewport = { x, y, width, height };
     
     // If this is the first time we're setting real viewport dimensions,
-    // initialize cameras to be centered
+    // initialize cameras to be centered with proper zoom
     if (wasFirstTime) {
       Object.keys(this.camera2D).forEach(viewType => {
         const camera = this.camera2D[viewType];
+        // Center world (0,0) at screen center
         camera.offsetX = width / 2;
         camera.offsetY = height / 2;
+        
+        // Set zoom to show 160x160 grid (80 units each way)
+        const desiredGridSize = 160;
+        const availableWidth = width * 0.9;
+        const availableHeight = height * 0.9;
+        const blockSize = 20;
+        const gridPixelSize = desiredGridSize * blockSize;
+        
+        const zoomX = availableWidth / gridPixelSize;
+        const zoomY = availableHeight / gridPixelSize;
+        camera.zoom = Math.min(zoomX, zoomY, 1.0);
+        
+        console.log(`Initial camera setup for ${viewType}: zoom ${camera.zoom.toFixed(2)}`);
       });
     }
   }
@@ -96,9 +110,11 @@ export class CameraController {
   }
 
   /**
-   * Pan the camera (for 2D views)
+   * Pan the camera (for 2D views) - DISABLED
    */
   pan(deltaX, deltaY, viewType = null) {
+    // Panning disabled - do nothing
+    /*
     const view = viewType || this.currentView;
     
     if (view === '3d') {
@@ -118,6 +134,7 @@ export class CameraController {
     
     camera.offsetX = Math.max(-maxOffset, Math.min(maxOffset, newOffsetX));
     camera.offsetY = Math.max(-maxOffset, Math.min(maxOffset, newOffsetY));
+    */
   }
 
   /**
@@ -178,7 +195,7 @@ export class CameraController {
   }
 
   /**
-   * Reset camera to default position
+   * Reset camera to default position - CENTERED COORDINATE SYSTEM
    */
   resetView(viewType = null) {
     const view = viewType || this.currentView;
@@ -194,10 +211,22 @@ export class CameraController {
     } else {
       const camera = this.camera2D[view];
       if (camera) {
-        // Reset camera to center of viewport (world origin at viewport center)
+        // Center the coordinate system: world (0,0) at screen center
         camera.offsetX = this.viewport.width / 2;
         camera.offsetY = this.viewport.height / 2;
-        camera.zoom = 1.0;
+        // Set zoom to show approximately 80 units in each direction
+        const desiredGridSize = 160; // Total grid size (80 units each way)
+        const availableWidth = this.viewport.width * 0.9; // Use 90% of viewport
+        const availableHeight = this.viewport.height * 0.9;
+        const blockSize = 20; // Block size in pixels at zoom 1.0
+        const gridPixelSize = desiredGridSize * blockSize; // Total grid in pixels
+        
+        // Calculate zoom to fit the grid
+        const zoomX = availableWidth / gridPixelSize;
+        const zoomY = availableHeight / gridPixelSize;
+        camera.zoom = Math.min(zoomX, zoomY, 1.0); // Don't zoom in beyond 1.0
+        
+        console.log(`Camera reset: viewport ${this.viewport.width}x${this.viewport.height}, zoom ${camera.zoom.toFixed(2)}`);
       }
     }
   }

@@ -12,12 +12,10 @@ export class AppStateManager {
     this.currentLevel = 0;
     
     // Active tool selection
-    this.activeTool = 'place';
+    this.activeTool = 'block';
     
-    // Current block type
+    // Current block type and layer
     this.currentBlockType = 'blockA';
-    
-    // Current layer
     this.currentLayer = 'default';
     
     // UI state
@@ -49,6 +47,7 @@ export class AppStateManager {
     this.renderers = new Map();
     this.toolManager = null;
     this.inputController = null;
+    this.cameraController = null;
     
     // Project metadata
     this.projectInfo = {
@@ -75,11 +74,12 @@ export class AppStateManager {
   /**
    * Connect other modules to the state manager
    */
-  connect(blockDataManager, viewManager, toolManager, inputController) {
+  connect(blockDataManager, viewManager, toolManager, inputController, cameraController = null) {
     this.blockDataManager = blockDataManager;
     this.viewManager = viewManager;
     this.toolManager = toolManager;
     this.inputController = inputController;
+    this.cameraController = cameraController;
     
     // Connect view manager back to us
     if (this.viewManager && this.viewManager.connect) {
@@ -98,6 +98,11 @@ export class AppStateManager {
     if (viewType === this.currentView) return;
     
     const previousView = this.currentView;
+    
+    // Update camera controller active view
+    if (this.cameraController) {
+      this.cameraController.setActiveView(viewType);
+    }
     
     // Switch view in view manager
     if (this.viewManager && this.viewManager.switchToView(viewType)) {

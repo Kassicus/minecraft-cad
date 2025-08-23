@@ -3,6 +3,8 @@
  * Abstract base class for all tools
  */
 
+import { coordinateSystem } from '../utils/CoordinateSystem.js';
+
 export class BaseTool {
   constructor(name, displayName) {
     if (new.target === BaseTool) {
@@ -270,10 +272,10 @@ export class BaseTool {
    * Convert world position to grid position
    */
   worldToGrid(worldPos) {
-    const blockSize = 20;
+    const gridPos = coordinateSystem.worldToGrid(worldPos.x, worldPos.y);
     return {
-      x: Math.floor(worldPos.x / blockSize),
-      y: Math.floor(worldPos.y / blockSize),
+      x: gridPos.x,
+      y: gridPos.y,
       z: this.appStateManager ? this.appStateManager.currentLevel : 0
     };
   }
@@ -282,22 +284,14 @@ export class BaseTool {
    * Convert grid position to world position
    */
   gridToWorld(gridPos) {
-    const blockSize = 20;
-    return {
-      x: gridPos.x * blockSize,
-      y: gridPos.y * blockSize
-    };
+    return coordinateSystem.gridToWorld(gridPos.x, gridPos.y);
   }
 
   /**
    * Snap position to grid
    */
   snapToGrid(worldPos) {
-    const blockSize = 20;
-    return {
-      x: Math.round(worldPos.x / blockSize) * blockSize,
-      y: Math.round(worldPos.y / blockSize) * blockSize
-    };
+    return coordinateSystem.snapToGrid(worldPos.x, worldPos.y);
   }
 
   /**
@@ -305,20 +299,6 @@ export class BaseTool {
    */
   isValidCoordinate(x, y, z) {
     return x >= 0 && x < 100 && y >= 0 && y < 100 && z >= 0 && z < 50;
-  }
-
-  /**
-   * Get current block type from app state
-   */
-  getCurrentBlockType() {
-    return this.appStateManager.currentBlockType;
-  }
-
-  /**
-   * Get current level from app state
-   */
-  getCurrentLevel() {
-    return this.appStateManager.currentLevel;
   }
 
   /**
