@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MinecraftCAD</title>
     
+    <!-- Three.js ES Module Setup -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        // Load Three.js and OrbitControls as ES modules
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // Make them available globally for our existing code
+        window.THREE = THREE;
+        window.OrbitControls = OrbitControls;
+        
+        console.log('Three.js and OrbitControls loaded as ES modules');
+        console.log('THREE.REVISION:', THREE.REVISION);
+        
+        // Dispatch a custom event to notify when Three.js is ready
+        window.dispatchEvent(new CustomEvent('threejs-loaded'));
+    </script>
+    
     <!-- CSS Imports -->
     <link rel="stylesheet" href="styles/variables.css">
     <link rel="stylesheet" href="styles/base.css">
@@ -23,14 +48,13 @@
         <!-- Top Toolbar -->
         <div class="toolbar">
             <div class="tool-group">
-                <button class="tool-btn active" data-tool="place" title="Place Block">■</button>
-                <button class="tool-btn" data-tool="erase" title="Erase Block">⌫</button>
-                <button class="tool-btn" data-tool="select" title="Select">⬚</button>
+                <button class="tool-btn active" data-tool="block" title="Place Block (B)">■</button>
+                <button class="tool-btn" data-tool="selection" title="Selection (S)">⬚</button>
             </div>
             <div class="tool-group">
-                <button class="tool-btn" data-tool="line" title="Line">╱</button>
-                <button class="tool-btn" data-tool="rectangle" title="Rectangle">▢</button>
-                <button class="tool-btn" data-tool="fill" title="Fill">▣</button>
+                <button class="tool-btn" data-tool="line" title="Line (L)">╱</button>
+                <button class="tool-btn" data-tool="rectangle" title="Rectangle (R)">▢</button>
+                <button class="tool-btn" data-tool="fill" title="Fill (F)">▣</button>
             </div>
             <div class="tool-group">
                 <button class="tool-btn" data-tool="measure" title="Measure">📏</button>
@@ -102,7 +126,12 @@
                 </div>
                 
                 <div class="canvas-area">
-                    <canvas id="main-canvas" class="main-canvas"></canvas>
+                    <canvas id="top-canvas" class="view-canvas active" data-view="top"></canvas>
+                    <canvas id="3d-canvas" class="view-canvas" data-view="3d"></canvas>
+                    <canvas id="north-canvas" class="view-canvas" data-view="north"></canvas>
+                    <canvas id="south-canvas" class="view-canvas" data-view="south"></canvas>
+                    <canvas id="east-canvas" class="view-canvas" data-view="east"></canvas>
+                    <canvas id="west-canvas" class="view-canvas" data-view="west"></canvas>
                 </div>
                 
                 <div class="status-bar">

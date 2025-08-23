@@ -418,6 +418,38 @@ export class TopViewRenderer extends BaseRenderer {
   }
 
   /**
+   * Convert screen coordinates to world coordinates (REMOVED - using simple approach)
+   */
+
+  /**
+   * Convert screen coordinates to grid coordinates
+   */
+  screenToGrid(screenX, screenY) {
+    // First convert screen to world coordinates (accounting for camera)
+    const worldX = (screenX - this.camera.offsetX) / this.camera.zoom;
+    const worldY = (screenY - this.camera.offsetY) / this.camera.zoom;
+    
+    // Then convert world to grid coordinates
+    return {
+      x: Math.floor(worldX / this.settings.blockSize),
+      y: Math.floor(worldY / this.settings.blockSize)
+    };
+  }
+
+  /**
+   * Convert grid coordinates to screen coordinates
+   */
+  gridToScreen(gridX, gridY) {
+    const worldX = gridX * this.settings.blockSize;
+    const worldY = gridY * this.settings.blockSize;
+    
+    return {
+      x: worldX * this.camera.zoom + this.camera.offsetX,
+      y: worldY * this.camera.zoom + this.camera.offsetY
+    };
+  }
+
+  /**
    * Get the block at screen coordinates
    */
   getBlockAtScreen(screenX, screenY) {

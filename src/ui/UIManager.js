@@ -34,8 +34,8 @@ export class UIManager {
       // Project title
       projectTitle: document.querySelector('.project-title'),
       
-      // Canvas
-      mainCanvas: document.getElementById('main-canvas')
+      // Canvas (will be updated dynamically)
+      currentCanvas: null
     };
     
     // UI state
@@ -275,13 +275,15 @@ export class UIManager {
    * Update canvas cursor based on current tool
    */
   updateCanvasCursor(toolType) {
-    if (!this.elements.mainCanvas) return;
+    // Get current canvas from app state manager
+    const canvas = this.appStateManager?.viewManager?.getCurrentCanvas();
+    if (!canvas) return;
     
     // Remove all cursor classes
-    this.elements.mainCanvas.className = this.elements.mainCanvas.className.replace(/\btool-cursor-\w+\b/g, '');
+    canvas.className = canvas.className.replace(/\btool-cursor-\w+\b/g, '');
     
     // Add appropriate cursor class
-    this.elements.mainCanvas.classList.add(`tool-cursor-${toolType}`);
+    canvas.classList.add(`tool-cursor-${toolType}`);
     
     // Set CSS cursor as fallback
     const cursors = {
@@ -296,7 +298,7 @@ export class UIManager {
       zoom: 'zoom-in'
     };
     
-    this.elements.mainCanvas.style.cursor = cursors[toolType] || 'default';
+    canvas.style.cursor = cursors[toolType] || 'default';
   }
 
   /**

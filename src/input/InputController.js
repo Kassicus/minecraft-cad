@@ -6,9 +6,9 @@
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class InputController {
-  constructor(appStateManager, renderers) {
+  constructor(appStateManager, viewManager) {
     this.appStateManager = appStateManager;
-    this.renderers = renderers || new Map();
+    this.viewManager = viewManager;
     this.cameraController = null;
     this.currentTool = null;
     
@@ -62,16 +62,26 @@ export class InputController {
   connect(cameraController, toolManager) {
     this.cameraController = cameraController;
     this.toolManager = toolManager;
+    
+    // Set up tool change listener to update current tool reference
+    if (this.toolManager) {
+      this.toolManager.addToolChangeListener((toolName, tool) => {
+        this.currentTool = tool;
+      });
+      
+      // Set initial tool
+      this.currentTool = this.toolManager.getCurrentTool();
+    }
   }
 
   /**
    * Setup all event listeners
    */
   setupEventListeners() {
-    this.canvas = document.getElementById('main-canvas');
+    this.canvas = this.viewManager ? this.viewManager.getCurrentCanvas() : null;
     
     if (!this.canvas) {
-      console.warn('Main canvas not found, input controller disabled');
+      console.warn('Canvas not found, input controller disabled');
       return;
     }
     
@@ -301,8 +311,8 @@ export class InputController {
    */
   handleRightMouseDown(worldPos, event) {
     // Could be used for context menu or alternate tool action
-    if (this.currentTool && this.currentTool.handleRightClick) {
-      this.currentTool.handleRightClick(worldPos, event);
+    if (this.currentTool && this.currentTool.onRightClick) {
+      this.currentTool.onRightClick(event, worldPos);
     }
   }
 
@@ -558,13 +568,30 @@ export class InputController {
   }
 
   getWorldPosition(event) {
-    if (!this.cameraController) return { x: 0, y: 0 };
+    if (!this.viewManager) return { x: 0, y: 0 };
     
-    const rect = this.canvas.getBoundingClientRect();
+    // Get the CURRENT canvas, not the cached one
+    const currentCanvas = this.viewManager.getCurrentCanvas();
+    if (!currentCanvas) return { x: 0, y: 0 };
+    
+    const rect = currentCanvas.getBoundingClientRect();
     const screenX = event.clientX - rect.left;
     const screenY = event.clientY - rect.top;
     
-    return this.cameraController.screenToWorld(screenX, screenY);
+    console.log('InputController getWorldPosition:', {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      rectLeft: rect.left,
+      rectTop: rect.top,
+      screenX,
+      screenY,
+      canvasId: currentCanvas.id
+    });
+    
+    const worldPos = this.viewManager.screenToWorld(screenX, screenY);
+    console.log('InputController final worldPos:', worldPos);
+    
+    return worldPos;
   }
 
   updateCursorDisplay(worldPos) {
@@ -576,6 +603,11 @@ export class InputController {
     
     if (cursorX) cursorX.textContent = `X: ${gridPos.x}`;
     if (cursorY) cursorY.textContent = `Y: ${gridPos.y}`;
+    
+    // Update cursor position across views
+    if (this.viewManager) {
+      this.viewManager.updateCursorPosition(gridPos.x, gridPos.y, this.appStateManager.currentLevel);
+    }
   }
 
   worldToGrid(worldPos) {
@@ -602,11 +634,9 @@ export class InputController {
         this.cameraController.setViewport(0, 0, rect.width, rect.height);
       }
       
-      // Notify renderers
-      for (const renderer of this.renderers.values()) {
-        if (renderer.onResize) {
-          renderer.onResize(rect.width, rect.height);
-        }
+      // Notify view manager
+      if (this.viewManager) {
+        this.viewManager.onResize();
       }
       
       this.requestRender();

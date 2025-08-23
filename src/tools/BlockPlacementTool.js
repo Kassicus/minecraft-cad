@@ -6,8 +6,8 @@
 import { BaseTool } from './BaseTool.js';
 
 export class BlockPlacementTool extends BaseTool {
-  constructor(blockDataManager, appStateManager) {
-    super('Place', blockDataManager, appStateManager);
+  constructor() {
+    super('block', 'Block Placement Tool');
     
     // Tool-specific settings
     this.settings = {
@@ -24,7 +24,7 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse down - start placing blocks
    */
-  onMouseDown(worldPos, event) {
+  onMouseDown(event, worldPos) {
     const gridPos = this.worldToGrid(worldPos);
     
     // Validate coordinates
@@ -44,7 +44,7 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse move - continue placing or show preview
    */
-  onMouseMove(worldPos, event) {
+  onMouseMove(event, worldPos) {
     const gridPos = this.worldToGrid(worldPos);
     
     // Validate coordinates
@@ -67,7 +67,7 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse up - finish placing
    */
-  onMouseUp(worldPos, event) {
+  onMouseUp(event, worldPos) {
     this.isPlacing = false;
     this.placedBlocks.clear();
     this.clearPreview();
@@ -283,7 +283,7 @@ export class BlockPlacementTool extends BaseTool {
    * Set cursor (helper method)
    */
   setCursor(cursor) {
-    const canvas = document.getElementById('main-canvas');
+    const canvas = this.appStateManager?.viewManager?.getCurrentCanvas();
     if (canvas) {
       canvas.style.cursor = cursor;
     }

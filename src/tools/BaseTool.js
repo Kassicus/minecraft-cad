@@ -4,14 +4,20 @@
  */
 
 export class BaseTool {
-  constructor(name, blockDataManager, appStateManager) {
+  constructor(name, displayName) {
     if (new.target === BaseTool) {
       throw new Error('BaseTool is abstract and cannot be instantiated directly');
     }
     
     this.name = name;
-    this.blockDataManager = blockDataManager;
-    this.appStateManager = appStateManager;
+    this.displayName = displayName || name;
+    
+    // Connected systems (set via connect method)
+    this.blockDataManager = null;
+    this.appStateManager = null;
+    this.inputController = null;
+    this.uiManager = null;
+    this.renderer = null;
     
     // Tool state
     this.isActive = false;
@@ -35,29 +41,109 @@ export class BaseTool {
       ctrl: false,
       alt: false
     };
+    
+    // Current block type
+    this.currentBlockType = 'blockA';
+  }
+
+  /**
+   * Connect the tool to other systems
+   */
+  connect(appStateManager, blockDataManager, inputController, uiManager) {
+    this.appStateManager = appStateManager;
+    this.blockDataManager = blockDataManager;
+    this.inputController = inputController;
+    this.uiManager = uiManager;
+    
+    // Get current renderer if available
+    if (this.appStateManager && this.appStateManager.viewManager) {
+      this.renderer = this.appStateManager.viewManager.getCurrentRenderer();
+    }
+    
+    console.log(`Connected ${this.name} tool to systems`);
+  }
+
+  /**
+   * Set current block type
+   */
+  setCurrentBlockType(blockType) {
+    this.currentBlockType = blockType;
+  }
+
+  /**
+   * Get current block type
+   */
+  getCurrentBlockType() {
+    return this.currentBlockType;
+  }
+
+  /**
+   * Set cursor style
+   */
+  setCursor(cursorStyle) {
+    if (this.uiManager && this.uiManager.setCursor) {
+      this.uiManager.setCursor(cursorStyle);
+    } else if (document.body) {
+      document.body.style.cursor = cursorStyle;
+    }
+  }
+
+  /**
+   * Notify that changes have been made
+   */
+  notifyChange() {
+    if (this.appStateManager && this.appStateManager.emit) {
+      this.appStateManager.emit('renderRequested');
+    }
+  }
+
+  /**
+   * Notify that status has changed
+   */
+  notifyStatusChange() {
+    if (this.appStateManager && this.appStateManager.emit) {
+      this.appStateManager.emit('statusChanged');
+    }
+  }
+
+  /**
+   * Get tool status text (default implementation)
+   */
+  getStatusText() {
+    return `${this.displayName} - Click to use`;
   }
 
   /**
    * Abstract methods that must be implemented by subclasses
    */
-  onMouseDown(worldPos, event) {
-    throw new Error('onMouseDown() method must be implemented by subclass');
+  onMouseDown(event, worldPos) {
+    // Default implementation - tools can override
+    return false;
   }
 
-  onMouseMove(worldPos, event) {
-    throw new Error('onMouseMove() method must be implemented by subclass');
+  onMouseMove(event, worldPos) {
+    // Default implementation - tools can override
+    return false;
   }
 
-  onMouseUp(worldPos, event) {
-    throw new Error('onMouseUp() method must be implemented by subclass');
+  onMouseUp(event, worldPos) {
+    // Default implementation - tools can override
+    return false;
   }
 
-  onKeyDown(key, event) {
-    throw new Error('onKeyDown() method must be implemented by subclass');
+  onKeyDown(event) {
+    // Default implementation - tools can override
+    return false;
   }
 
-  onKeyUp(key, event) {
-    // Optional - not all tools need key up events
+  onKeyUp(event) {
+    // Default implementation - tools can override
+    return false;
+  }
+
+  onRightClick(event, worldPos) {
+    // Default implementation - tools can override
+    return false;
   }
 
   /**
@@ -185,11 +271,19 @@ export class BaseTool {
    */
   worldToGrid(worldPos) {
     const gridSize = 20; // Should match renderer grid size
-    return {
+    const gridPos = {
       x: Math.floor(worldPos.x / gridSize),
       y: Math.floor(worldPos.y / gridSize),
-      z: this.appStateManager.currentLevel
+      z: this.appStateManager ? this.appStateManager.currentLevel : 0
     };
+    
+    console.log('BaseTool worldToGrid:', {
+      worldPos,
+      gridSize,
+      gridPos
+    });
+    
+    return gridPos;
   }
 
   /**

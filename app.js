@@ -6,10 +6,10 @@
 import { MemoryManager } from './src/core/MemoryManager.js';
 import { BlockDataManager } from './src/core/BlockDataManager.js';
 import { AppStateManager } from './src/core/AppStateManager.js';
-import { TopViewRenderer } from './src/rendering/TopViewRenderer.js';
+import { ViewManager } from './src/rendering/ViewManager.js';
 import { CameraController } from './src/input/CameraController.js';
 import { InputController } from './src/input/InputController.js';
-import { BlockPlacementTool } from './src/tools/BlockPlacementTool.js';
+import { ToolManager } from './src/tools/ToolManager.js';
 import { UIManager } from './src/ui/UIManager.js';
 
 class MinecraftCAD {
@@ -23,13 +23,12 @@ class MinecraftCAD {
     this.appStateManager = null;
     
     // Rendering
-    this.renderers = new Map();
+    this.viewManager = null;
     
     // Input and tools
     this.cameraController = null;
     this.inputController = null;
-    this.tools = new Map();
-    this.currentTool = null;
+    this.toolManager = null;
     
     // UI
     this.uiManager = null;
@@ -133,17 +132,8 @@ class MinecraftCAD {
   initializeRendering() {
     console.log('Initializing rendering systems...');
     
-    // Get canvas element
-    const canvas = document.getElementById('main-canvas');
-    if (!canvas) {
-      throw new Error('Main canvas element not found');
-    }
-    
-    // Initialize top view renderer
-    const topRenderer = new TopViewRenderer(canvas);
-    this.renderers.set('top', topRenderer);
-    
-    // TODO: Initialize other renderers (3D, elevation views) in future phases
+    // Initialize view manager (handles all renderers)
+    this.viewManager = new ViewManager();
     
     console.log('Rendering systems initialized');
   }
@@ -157,37 +147,19 @@ class MinecraftCAD {
     // Camera controller
     this.cameraController = new CameraController();
     
+    // Initialize tool manager
+    this.toolManager = new ToolManager();
+    
     // Input controller
-    this.inputController = new InputController(this.appStateManager, this.renderers);
-    this.inputController.connect(this.cameraController, this);
-    
-    // Initialize tools
-    this.initializeTools();
-    
-    // Set default tool
-    this.setActiveTool('place');
+    this.inputController = new InputController(this.appStateManager, this.viewManager);
+    this.inputController.connect(this.cameraController, this.toolManager);
     
     console.log('Input and tools initialized');
   }
 
   /**
-   * Initialize all tools
+   * This method is no longer needed - ToolManager handles tool initialization
    */
-  initializeTools() {
-    // Block placement tool
-    const placementTool = new BlockPlacementTool(this.blockDataManager, this.appStateManager);
-    this.tools.set('place', placementTool);
-    
-    // TODO: Initialize other tools in future phases
-    // - Erase tool
-    // - Selection tool
-    // - Line tool
-    // - Rectangle tool
-    // - Fill tool
-    // - Measure tool
-    // - Pan tool
-    // - Zoom tool
-  }
 
   /**
    * Initialize UI management
@@ -206,11 +178,19 @@ class MinecraftCAD {
   connectSystems() {
     console.log('Connecting systems...');
     
+    // Connect tool manager to other systems
+    this.toolManager.connect(
+      this.appStateManager,
+      this.blockDataManager,
+      this.inputController,
+      this.uiManager
+    );
+    
     // Connect app state manager to other systems
     this.appStateManager.connect(
       this.blockDataManager,
-      this.renderers,
-      this, // tool manager
+      this.viewManager,
+      this.toolManager,
       this.inputController
     );
     
@@ -220,13 +200,98 @@ class MinecraftCAD {
     });
     
     // Set up camera controller with initial viewport
-    const canvas = document.getElementById('main-canvas');
+    const canvas = this.viewManager.getCurrentCanvas();
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       this.cameraController.setViewport(0, 0, rect.width, rect.height);
     }
     
+    // Set up tool button handlers
+    this.setupToolButtons();
+    
+    // Set up keyboard event handlers
+    this.setupKeyboardHandlers();
+    
     console.log('Systems connected');
+  }
+
+  /**
+   * Set up tool button event handlers
+   */
+  setupToolButtons() {
+    const toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+    
+    toolButtons.forEach(button => {
+      button.addEventListener('click', (event) => {
+        const toolName = button.getAttribute('data-tool');
+        
+        // Only switch to implemented tools
+        if (this.toolManager.getTool(toolName)) {
+          // Remove active class from all buttons
+          toolButtons.forEach(btn => btn.classList.remove('active'));
+          
+          // Add active class to clicked button
+          button.classList.add('active');
+          
+          // Switch to the selected tool
+          this.toolManager.setCurrentTool(toolName);
+          
+          // Update status bar
+          this.updateStatusBar();
+        } else {
+          console.log(`Tool '${toolName}' not yet implemented`);
+        }
+      });
+    });
+    
+    // Set up tool change listener to update UI
+    this.toolManager.addToolChangeListener((toolName) => {
+      this.updateToolButtonStates(toolName);
+      this.updateStatusBar();
+    });
+  }
+
+  /**
+   * Update tool button visual states
+   */
+  updateToolButtonStates(activeTool) {
+    const toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+    
+    toolButtons.forEach(button => {
+      const toolName = button.getAttribute('data-tool');
+      if (toolName === activeTool) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
+  }
+
+  /**
+   * Update status bar with current tool info
+   */
+  updateStatusBar() {
+    const statusElement = document.querySelector('.status-text');
+    if (statusElement && this.toolManager) {
+      statusElement.textContent = this.toolManager.getCurrentToolStatus();
+    }
+  }
+
+  /**
+   * Set up keyboard event handlers
+   */
+  setupKeyboardHandlers() {
+    document.addEventListener('keydown', (event) => {
+      if (this.toolManager) {
+        this.toolManager.onKeyDown(event);
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      if (this.toolManager) {
+        this.toolManager.onKeyUp(event);
+      }
+    });
   }
 
   /**
@@ -294,16 +359,19 @@ class MinecraftCAD {
     // Get current view and camera state
     const currentView = this.appStateManager.currentView;
     const currentLevel = this.appStateManager.currentLevel;
-    const cameraState = this.cameraController.getCameraForView(currentView);
+    const cameraStates = this.cameraController.camera2D;
+    cameraStates['3d'] = this.cameraController.camera3D;
     
     // Render current view
-    const renderer = this.renderers.get(currentView);
-    if (renderer && this.blockDataManager) {
-      renderer.render(this.blockDataManager, cameraState, currentLevel);
+    if (this.viewManager && this.blockDataManager) {
+      this.viewManager.render(this.blockDataManager, cameraStates, currentLevel);
       
       // Render tool overlays
       if (this.currentTool && this.currentTool.renderOverlay) {
-        this.currentTool.renderOverlay(renderer);
+        const currentRenderer = this.viewManager.getCurrentRenderer();
+        if (currentRenderer) {
+          this.currentTool.renderOverlay(currentRenderer);
+        }
       }
     }
   }
@@ -370,21 +438,16 @@ class MinecraftCAD {
    * Handle window resize
    */
   handleResize() {
-    const canvas = document.getElementById('main-canvas');
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    
-    // Update camera controller viewport
-    if (this.cameraController) {
-      this.cameraController.setViewport(0, 0, rect.width, rect.height);
+    // Update view manager (handles all canvas resizing)
+    if (this.viewManager) {
+      this.viewManager.onResize();
     }
     
-    // Update renderers
-    for (const renderer of this.renderers.values()) {
-      if (renderer.onResize) {
-        renderer.onResize(rect.width, rect.height);
-      }
+    // Update camera controller viewport
+    const canvas = this.viewManager ? this.viewManager.getCurrentCanvas() : null;
+    if (canvas && this.cameraController) {
+      const rect = canvas.getBoundingClientRect();
+      this.cameraController.setViewport(0, 0, rect.width, rect.height);
     }
   }
 
@@ -461,17 +524,15 @@ class MinecraftCAD {
       this.cameraController.dispose();
     }
     
-    // Dispose of tools
-    for (const tool of this.tools.values()) {
-      tool.dispose();
+    // Dispose of tool manager
+    if (this.toolManager) {
+      this.toolManager.destroy();
     }
-    this.tools.clear();
     
-    // Dispose of renderers
-    for (const renderer of this.renderers.values()) {
-      renderer.dispose();
+    // Dispose of view manager
+    if (this.viewManager) {
+      this.viewManager.dispose();
     }
-    this.renderers.clear();
     
     if (this.appStateManager) {
       this.appStateManager.dispose();

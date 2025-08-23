@@ -75,20 +75,11 @@ export class AppStateManager {
   /**
    * Connect other modules to the state manager
    */
-  connect(blockDataManager, renderers, toolManager, inputController) {
+  connect(blockDataManager, viewManager, toolManager, inputController) {
     this.blockDataManager = blockDataManager;
+    this.viewManager = viewManager;
     this.toolManager = toolManager;
     this.inputController = inputController;
-    
-    // Store renderers by view type
-    if (renderers) {
-      if (renderers.top) this.renderers.set('top', renderers.top);
-      if (renderers.threeDView) this.renderers.set('3d', renderers.threeDView);
-      if (renderers.north) this.renderers.set('north', renderers.north);
-      if (renderers.south) this.renderers.set('south', renderers.south);
-      if (renderers.east) this.renderers.set('east', renderers.east);
-      if (renderers.west) this.renderers.set('west', renderers.west);
-    }
     
     // Initial state setup
     this.updateUI();
@@ -102,23 +93,24 @@ export class AppStateManager {
     if (viewType === this.currentView) return;
     
     const previousView = this.currentView;
-    this.currentView = viewType;
     
-    // Notify listeners
-    this.emit('viewChanged', { 
-      previous: previousView, 
-      current: viewType, 
-      level: this.currentLevel 
-    });
-    
-    // Update UI
-    this.updateViewButtons();
-    
-    // Notify renderers
-    this.notifyViewChange(viewType, this.currentLevel);
-    
-    // Update tool availability based on view
-    this.updateToolAvailability();
+    // Switch view in view manager
+    if (this.viewManager && this.viewManager.switchToView(viewType)) {
+      this.currentView = viewType;
+      
+      // Notify listeners
+      this.emit('viewChanged', { 
+        previous: previousView, 
+        current: viewType, 
+        level: this.currentLevel 
+      });
+      
+      // Update UI
+      this.updateViewButtons();
+      
+      // Update tool availability based on view
+      this.updateToolAvailability();
+    }
   }
 
   /**
@@ -157,7 +149,7 @@ export class AppStateManager {
     
     // Notify tool manager
     if (this.toolManager) {
-      this.toolManager.setActiveTool(toolType);
+      this.toolManager.setCurrentTool(toolType);
     }
     
     // Update UI
@@ -236,13 +228,12 @@ export class AppStateManager {
   }
 
   /**
-   * Notify all renderers of view/level changes
+   * Notify view manager of view/level changes
    */
   notifyViewChange(viewType, level) {
-    for (const [type, renderer] of this.renderers) {
-      if (renderer && typeof renderer.onViewChange === 'function') {
-        renderer.onViewChange(viewType, level, this.cameraStates[viewType]);
-      }
+    // View manager handles renderer updates
+    if (this.viewManager) {
+      this.viewManager.forceUpdateCurrentView();
     }
     
     // Update canvas cursor based on current tool
@@ -343,7 +334,7 @@ export class AppStateManager {
    * Update canvas cursor based on current tool
    */
   updateCanvasCursor() {
-    const canvas = document.getElementById('main-canvas');
+    const canvas = this.viewManager ? this.viewManager.getCurrentCanvas() : null;
     if (!canvas) return;
     
     // Remove all cursor classes

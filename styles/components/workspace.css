@@ -24,8 +24,8 @@
   z-index: 1;
 }
 
-/* Main Canvas */
-.main-canvas {
+/* View Canvases */
+.view-canvas {
   position: absolute;
   top: 0;
   left: 0;
@@ -33,26 +33,48 @@
   height: 100%;
   z-index: 2;
   cursor: crosshair;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
 }
 
-/* Canvas States */
-.main-canvas.panning {
+.view-canvas.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Canvas-specific styles */
+#top-canvas {
+  /* Top view specific styles */
+}
+
+#3d-canvas {
+  /* 3D view specific styles */
+  cursor: grab;
+}
+
+#3d-canvas:active {
   cursor: grabbing;
 }
 
-.main-canvas.zooming {
+/* Canvas States */
+.view-canvas.panning {
+  cursor: grabbing;
+}
+
+.view-canvas.zooming {
   cursor: zoom-in;
 }
 
-.main-canvas.placing {
+.view-canvas.placing {
   cursor: crosshair;
 }
 
-.main-canvas.erasing {
+.view-canvas.erasing {
   cursor: not-allowed;
 }
 
-.main-canvas.selecting {
+.view-canvas.selecting {
   cursor: pointer;
 }
 
