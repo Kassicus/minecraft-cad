@@ -81,6 +81,11 @@ export class AppStateManager {
     this.toolManager = toolManager;
     this.inputController = inputController;
     
+    // Connect view manager back to us
+    if (this.viewManager && this.viewManager.connect) {
+      this.viewManager.connect(this);
+    }
+    
     // Initial state setup
     this.updateUI();
     this.notifyViewChange(this.currentView, this.currentLevel);

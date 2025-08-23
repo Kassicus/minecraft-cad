@@ -270,30 +270,22 @@ export class BaseTool {
    * Convert world position to grid position
    */
   worldToGrid(worldPos) {
-    const gridSize = 20; // Should match renderer grid size
-    const gridPos = {
-      x: Math.floor(worldPos.x / gridSize),
-      y: Math.floor(worldPos.y / gridSize),
+    const blockSize = 20;
+    return {
+      x: Math.floor(worldPos.x / blockSize),
+      y: Math.floor(worldPos.y / blockSize),
       z: this.appStateManager ? this.appStateManager.currentLevel : 0
     };
-    
-    console.log('BaseTool worldToGrid:', {
-      worldPos,
-      gridSize,
-      gridPos
-    });
-    
-    return gridPos;
   }
 
   /**
    * Convert grid position to world position
    */
   gridToWorld(gridPos) {
-    const gridSize = 20;
+    const blockSize = 20;
     return {
-      x: gridPos.x * gridSize,
-      y: gridPos.y * gridSize
+      x: gridPos.x * blockSize,
+      y: gridPos.y * blockSize
     };
   }
 
@@ -301,10 +293,10 @@ export class BaseTool {
    * Snap position to grid
    */
   snapToGrid(worldPos) {
-    const gridSize = 20;
+    const blockSize = 20;
     return {
-      x: Math.round(worldPos.x / gridSize) * gridSize,
-      y: Math.round(worldPos.y / gridSize) * gridSize
+      x: Math.round(worldPos.x / blockSize) * blockSize,
+      y: Math.round(worldPos.y / blockSize) * blockSize
     };
   }
 

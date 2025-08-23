@@ -32,7 +32,7 @@ export class BaseRenderer {
       showGrid: true,
       showMajorGrid: true,
       showGhostBlocks: true,
-      gridSize: 20,
+      blockSize: 20,
       majorGridInterval: 10
     };
     
@@ -159,10 +159,10 @@ export class BaseRenderer {
     );
     
     return {
-      minX: Math.floor(topLeft.x / this.settings.gridSize),
-      minY: Math.floor(topLeft.y / this.settings.gridSize),
-      maxX: Math.ceil(bottomRight.x / this.settings.gridSize),
-      maxY: Math.ceil(bottomRight.y / this.settings.gridSize)
+      minX: Math.floor(topLeft.x / this.settings.blockSize),
+      minY: Math.floor(topLeft.y / this.settings.blockSize),
+      maxX: Math.ceil(bottomRight.x / this.settings.blockSize),
+      maxY: Math.ceil(bottomRight.y / this.settings.blockSize)
     };
   }
 

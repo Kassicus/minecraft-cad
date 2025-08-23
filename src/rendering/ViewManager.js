@@ -26,6 +26,9 @@ export class ViewManager {
     this.cursorPosition = { x: 0, y: 0, z: 0 };
     this.selectedBlocks = new Set();
     
+    // Connected systems
+    this.appStateManager = null;
+    
     // Performance settings
     this.settings = {
       enableTransitions: true,
@@ -35,6 +38,13 @@ export class ViewManager {
     };
     
     this.initialize();
+  }
+
+  /**
+   * Connect to the app state manager
+   */
+  connect(appStateManager) {
+    this.appStateManager = appStateManager;
   }
 
   /**
@@ -512,26 +522,30 @@ export class ViewManager {
    */
   screenToWorld(screenX, screenY) {
     const renderer = this.getCurrentRenderer();
-    
-    // For TopViewRenderer, we need to account for camera transforms
-    if (renderer && renderer.camera) {
-      // Inverse of the gridToScreen transform:
-      // screenX = worldX * zoom + offsetX
-      // worldX = (screenX - offsetX) / zoom
-      const worldX = (screenX - renderer.camera.offsetX) / renderer.camera.zoom;
-      const worldY = (screenY - renderer.camera.offsetY) / renderer.camera.zoom;
-      
-      console.log('ViewManager screenToWorld:', {
-        screen: { x: screenX, y: screenY },
-        camera: { offsetX: renderer.camera.offsetX, offsetY: renderer.camera.offsetY, zoom: renderer.camera.zoom },
-        world: { x: worldX, y: worldY }
-      });
-      
-      return { x: worldX, y: worldY };
+    if (renderer && renderer.screenToWorld) {
+      // Ensure the renderer has the latest camera state
+      this.updateRendererCameraState();
+      return renderer.screenToWorld(screenX, screenY);
     }
     
-    // Fallback for renderers without camera
+    // Fallback for renderers without screenToWorld method
     return { x: screenX, y: screenY };
+  }
+
+  /**
+   * Update the current renderer with the latest camera state
+   */
+  updateRendererCameraState() {
+    const renderer = this.getCurrentRenderer();
+    if (!renderer) return;
+
+    // Get camera state from connected app state manager
+    if (this.appStateManager && this.appStateManager.cameraController) {
+      const cameraState = this.appStateManager.cameraController.getCameraForView(this.currentView);
+      if (cameraState && renderer.updateCamera) {
+        renderer.updateCamera(cameraState);
+      }
+    }
   }
 
   /**

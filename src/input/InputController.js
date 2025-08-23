@@ -78,7 +78,7 @@ export class InputController {
    * Setup all event listeners
    */
   setupEventListeners() {
-    this.canvas = this.viewManager ? this.viewManager.getCurrentCanvas() : null;
+    this.canvas = this.viewManager ? this.viewManager.getCurrentCanvas() : document.getElementById('top-canvas');
     
     if (!this.canvas) {
       console.warn('Canvas not found, input controller disabled');
@@ -570,28 +570,34 @@ export class InputController {
   getWorldPosition(event) {
     if (!this.viewManager) return { x: 0, y: 0 };
     
-    // Get the CURRENT canvas, not the cached one
+    // Get the current canvas and renderer
     const currentCanvas = this.viewManager.getCurrentCanvas();
-    if (!currentCanvas) return { x: 0, y: 0 };
+    const currentRenderer = this.viewManager.getCurrentRenderer();
+    if (!currentCanvas || !currentRenderer) return { x: 0, y: 0 };
     
+    // Get canvas-relative coordinates
     const rect = currentCanvas.getBoundingClientRect();
     const screenX = event.clientX - rect.left;
     const screenY = event.clientY - rect.top;
     
+    // Direct conversion using renderer's camera state
+    let worldX, worldY;
+    if (currentRenderer.camera) {
+      // Simple inverse transform: world = (screen - offset) / zoom
+      worldX = (screenX - currentRenderer.camera.offsetX) / currentRenderer.camera.zoom;
+      worldY = (screenY - currentRenderer.camera.offsetY) / currentRenderer.camera.zoom;
+    } else {
+      worldX = screenX;
+      worldY = screenY;
+    }
+    
     console.log('InputController getWorldPosition:', {
-      clientX: event.clientX,
-      clientY: event.clientY,
-      rectLeft: rect.left,
-      rectTop: rect.top,
-      screenX,
-      screenY,
-      canvasId: currentCanvas.id
+      screen: { x: screenX, y: screenY },
+      camera: currentRenderer.camera,
+      world: { x: worldX, y: worldY }
     });
     
-    const worldPos = this.viewManager.screenToWorld(screenX, screenY);
-    console.log('InputController final worldPos:', worldPos);
-    
-    return worldPos;
+    return { x: worldX, y: worldY };
   }
 
   updateCursorDisplay(worldPos) {
@@ -603,18 +609,14 @@ export class InputController {
     
     if (cursorX) cursorX.textContent = `X: ${gridPos.x}`;
     if (cursorY) cursorY.textContent = `Y: ${gridPos.y}`;
-    
-    // Update cursor position across views
-    if (this.viewManager) {
-      this.viewManager.updateCursorPosition(gridPos.x, gridPos.y, this.appStateManager.currentLevel);
-    }
   }
 
   worldToGrid(worldPos) {
-    const gridSize = 20;
+    const blockSize = 20;
     return {
-      x: Math.floor(worldPos.x / gridSize),
-      y: Math.floor(worldPos.y / gridSize)
+      x: Math.floor(worldPos.x / blockSize),
+      y: Math.floor(worldPos.y / blockSize),
+      z: this.appStateManager ? this.appStateManager.currentLevel : 0
     };
   }
 
@@ -632,11 +634,8 @@ export class InputController {
       // Update camera controller viewport
       if (this.cameraController) {
         this.cameraController.setViewport(0, 0, rect.width, rect.height);
-      }
-      
-      // Notify view manager
-      if (this.viewManager) {
-        this.viewManager.onResize();
+        // Recenter camera after resize to maintain coordinate system
+        this.cameraController.resetView();
       }
       
       this.requestRender();

@@ -98,14 +98,14 @@ export class TopViewRenderer extends BaseRenderer {
     
     // Vertical lines
     for (let x = bounds.minX; x <= bounds.maxX; x++) {
-      const screenX = this.worldToScreen(x * this.settings.gridSize, 0, 0).x;
+      const screenX = this.worldToScreen(x * this.settings.blockSize, 0, 0).x;
       ctx.moveTo(screenX, 0);
       ctx.lineTo(screenX, this.viewportBounds.height);
     }
     
     // Horizontal lines
     for (let y = bounds.minY; y <= bounds.maxY; y++) {
-      const screenY = this.worldToScreen(0, y * this.settings.gridSize, 0).y;
+      const screenY = this.worldToScreen(0, y * this.settings.blockSize, 0).y;
       ctx.moveTo(0, screenY);
       ctx.lineTo(this.viewportBounds.width, screenY);
     }
@@ -120,14 +120,14 @@ export class TopViewRenderer extends BaseRenderer {
       
       // Vertical major lines
       for (let x = Math.floor(bounds.minX / 10) * 10; x <= bounds.maxX; x += 10) {
-        const screenX = this.worldToScreen(x * this.settings.gridSize, 0, 0).x;
+        const screenX = this.worldToScreen(x * this.settings.blockSize, 0, 0).x;
         ctx.moveTo(screenX, 0);
         ctx.lineTo(screenX, this.viewportBounds.height);
       }
       
       // Horizontal major lines
       for (let y = Math.floor(bounds.minY / 10) * 10; y <= bounds.maxY; y += 10) {
-        const screenY = this.worldToScreen(0, y * this.settings.gridSize, 0).y;
+        const screenY = this.worldToScreen(0, y * this.settings.blockSize, 0).y;
         ctx.moveTo(0, screenY);
         ctx.lineTo(this.viewportBounds.width, screenY);
       }
@@ -161,8 +161,8 @@ export class TopViewRenderer extends BaseRenderer {
       }
       
       const screenPos = this.worldToScreen(
-        block.x * this.settings.gridSize,
-        block.y * this.settings.gridSize,
+        block.x * this.settings.blockSize,
+        block.y * this.settings.blockSize,
         0
       );
       
@@ -203,8 +203,8 @@ export class TopViewRenderer extends BaseRenderer {
         }
         
         const screenPos = this.worldToScreen(
-          block.x * this.settings.gridSize,
-          block.y * this.settings.gridSize,
+          block.x * this.settings.blockSize,
+          block.y * this.settings.blockSize,
           0
         );
         
@@ -342,9 +342,10 @@ export class TopViewRenderer extends BaseRenderer {
    */
   screenToGrid(screenX, screenY) {
     const world = this.screenToWorld(screenX, screenY);
+    const blockSize = 20;
     return {
-      x: Math.floor(world.x / this.settings.gridSize),
-      y: Math.floor(world.y / this.settings.gridSize)
+      x: Math.floor(world.x / blockSize),
+      y: Math.floor(world.y / blockSize)
     };
   }
 
@@ -352,8 +353,8 @@ export class TopViewRenderer extends BaseRenderer {
    * Convert grid coordinates to screen coordinates
    */
   gridToScreen(gridX, gridY) {
-    const worldX = gridX * this.settings.gridSize;
-    const worldY = gridY * this.settings.gridSize;
+    const worldX = gridX * this.settings.blockSize;
+    const worldY = gridY * this.settings.blockSize;
     return this.worldToScreen(worldX, worldY, 0);
   }
 
@@ -401,8 +402,8 @@ export class TopViewRenderer extends BaseRenderer {
     }
     
     // Calculate zoom to fit all blocks
-    const buildWidth = (bounds.maxX - bounds.minX + 1) * this.settings.gridSize;
-    const buildHeight = (bounds.maxY - bounds.minY + 1) * this.settings.gridSize;
+    const buildWidth = (bounds.maxX - bounds.minX + 1) * this.settings.blockSize;
+    const buildHeight = (bounds.maxY - bounds.minY + 1) * this.settings.blockSize;
     
     const scaleX = (this.viewportBounds.width * 0.8) / buildWidth;
     const scaleY = (this.viewportBounds.height * 0.8) / buildHeight;
@@ -410,44 +411,13 @@ export class TopViewRenderer extends BaseRenderer {
     this.camera.zoom = Math.min(scaleX, scaleY, 2.0);
     
     // Center the build
-    const centerX = (bounds.minX + bounds.maxX) * this.settings.gridSize / 2;
-    const centerY = (bounds.minY + bounds.maxY) * this.settings.gridSize / 2;
+    const centerX = (bounds.minX + bounds.maxX) * this.settings.blockSize / 2;
+    const centerY = (bounds.minY + bounds.maxY) * this.settings.blockSize / 2;
     
     this.camera.offsetX = this.viewportBounds.width / 2 - centerX * this.camera.zoom;
     this.camera.offsetY = this.viewportBounds.height / 2 - centerY * this.camera.zoom;
   }
 
-  /**
-   * Convert screen coordinates to world coordinates (REMOVED - using simple approach)
-   */
-
-  /**
-   * Convert screen coordinates to grid coordinates
-   */
-  screenToGrid(screenX, screenY) {
-    // First convert screen to world coordinates (accounting for camera)
-    const worldX = (screenX - this.camera.offsetX) / this.camera.zoom;
-    const worldY = (screenY - this.camera.offsetY) / this.camera.zoom;
-    
-    // Then convert world to grid coordinates
-    return {
-      x: Math.floor(worldX / this.settings.blockSize),
-      y: Math.floor(worldY / this.settings.blockSize)
-    };
-  }
-
-  /**
-   * Convert grid coordinates to screen coordinates
-   */
-  gridToScreen(gridX, gridY) {
-    const worldX = gridX * this.settings.blockSize;
-    const worldY = gridY * this.settings.blockSize;
-    
-    return {
-      x: worldX * this.camera.zoom + this.camera.offsetX,
-      y: worldY * this.camera.zoom + this.camera.offsetY
-    };
-  }
 
   /**
    * Get the block at screen coordinates
@@ -481,7 +451,7 @@ export class TopViewRenderer extends BaseRenderer {
     // Invalidate caches when relevant settings change
     if (newSettings.showGrid !== undefined || 
         newSettings.showMajorGrid !== undefined ||
-        newSettings.gridSize !== undefined) {
+        newSettings.blockSize !== undefined) {
       this.gridCacheValid = false;
     }
   }

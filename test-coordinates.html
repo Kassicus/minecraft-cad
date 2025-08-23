@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Coordinates - MinecraftCAD</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: monospace; }
+        canvas { border: 2px solid #333; cursor: crosshair; display: block; margin: 20px 0; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .box { padding: 10px; background: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <h1>MinecraftCAD Coordinate Debug</h1>
+    <p>Click anywhere on the canvas to test coordinate conversion</p>
+    
+    <canvas id="test-canvas" width="600" height="400"></canvas>
+    
+    <div class="debug">
+        <h3>Debug Info</h3>
+        <div class="grid">
+            <div class="box">
+                <strong>Mouse</strong><br>
+                Screen: <span id="screen-coords">-</span><br>
+                Client: <span id="client-coords">-</span>
+            </div>
+            <div class="box">
+                <strong>World</strong><br>
+                Position: <span id="world-coords">-</span><br>
+                Grid: <span id="grid-coords">-</span>
+            </div>
+            <div class="box">
+                <strong>Camera</strong><br>
+                Offset: <span id="camera-offset">-</span><br>
+                Zoom: <span id="camera-zoom">-</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="debug">
+        <h3>Expected Behavior</h3>
+        <ul>
+            <li>Center of canvas (300,200) should map to world (0,0)</li>
+            <li>World (0,0) should map to grid (0,0)</li>
+            <li>Clicking center should place block at grid position (0,0)</li>
+        </ul>
+    </div>
+
+    <script type="module">
+        import { CameraController } from './src/input/CameraController.js';
+        
+        const canvas = document.getElementById('test-canvas');
+        const ctx = canvas.getContext('2d');
+        const camera = new CameraController();
+        
+        // Initialize camera with canvas dimensions
+        const rect = canvas.getBoundingClientRect();
+        camera.setViewport(0, 0, rect.width, rect.height);
+        
+        // Draw grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            
+            const blockSize = 20;
+            const cameraState = camera.getCurrentCamera();
+            
+            // Draw grid lines
+            for (let x = -10; x <= 20; x++) {
+                const screenX = x * blockSize * cameraState.zoom + cameraState.offsetX;
+                ctx.beginPath();
+                ctx.moveTo(screenX, 0);
+                ctx.lineTo(screenX, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = -10; y <= 20; y++) {
+                const screenY = y * blockSize * cameraState.zoom + cameraState.offsetY;
+                ctx.beginPath();
+                ctx.moveTo(0, screenY);
+                ctx.lineTo(canvas.width, screenY);
+                ctx.stroke();
+            }
+            
+            // Draw origin
+            ctx.strokeStyle = '#f00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cameraState.offsetX, cameraState.offsetY, 5, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Draw center marker
+            ctx.strokeStyle = '#00f';
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        // Update debug display
+        function updateDebug(event, worldPos, gridPos) {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = event.clientX - rect.left;
+            const screenY = event.clientY - rect.top;
+            const cameraState = camera.getCurrentCamera();
+            
+            document.getElementById('screen-coords').textContent = `${screenX}, ${screenY}`;
+            document.getElementById('client-coords').textContent = `${event.clientX}, ${event.clientY}`;
+            document.getElementById('world-coords').textContent = `${worldPos.x.toFixed(1)}, ${worldPos.y.toFixed(1)}`;
+            document.getElementById('grid-coords').textContent = `${gridPos.x}, ${gridPos.y}`;
+            document.getElementById('camera-offset').textContent = `${cameraState.offsetX}, ${cameraState.offsetY}`;
+            document.getElementById('camera-zoom').textContent = `${cameraState.zoom}`;
+        }
+        
+        // Handle clicks
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = event.clientX - rect.left;
+            const screenY = event.clientY - rect.top;
+            
+            const worldPos = camera.screenToWorld(screenX, screenY);
+            const gridPos = {
+                x: Math.floor(worldPos.x / 20),
+                y: Math.floor(worldPos.y / 20)
+            };
+            
+            updateDebug(event, worldPos, gridPos);
+            
+            // Draw a dot where clicked
+            const cameraState = camera.getCurrentCamera();
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(
+                gridPos.x * 20 * cameraState.zoom + cameraState.offsetX,
+                gridPos.y * 20 * cameraState.zoom + cameraState.offsetY,
+                20 * cameraState.zoom,
+                20 * cameraState.zoom
+            );
+        });
+        
+        // Draw initial grid
+        drawGrid();
+        
+        // Update camera display
+        const cameraState = camera.getCurrentCamera();
+        document.getElementById('camera-offset').textContent = `${cameraState.offsetX}, ${cameraState.offsetY}`;
+        document.getElementById('camera-zoom').textContent = `${cameraState.zoom}`;
+        
+        console.log('Test loaded. Canvas size:', rect.width, 'x', rect.height);
+        console.log('Initial camera:', cameraState);
+    </script>
+</body>
+</html>

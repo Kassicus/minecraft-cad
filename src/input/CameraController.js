@@ -59,7 +59,18 @@ export class CameraController {
    * Update viewport dimensions
    */
   setViewport(x, y, width, height) {
+    const wasFirstTime = this.viewport.width === 800 && this.viewport.height === 600; // Default values
     this.viewport = { x, y, width, height };
+    
+    // If this is the first time we're setting real viewport dimensions,
+    // initialize cameras to be centered
+    if (wasFirstTime) {
+      Object.keys(this.camera2D).forEach(viewType => {
+        const camera = this.camera2D[viewType];
+        camera.offsetX = width / 2;
+        camera.offsetY = height / 2;
+      });
+    }
   }
 
   /**
@@ -183,6 +194,7 @@ export class CameraController {
     } else {
       const camera = this.camera2D[view];
       if (camera) {
+        // Reset camera to center of viewport (world origin at viewport center)
         camera.offsetX = this.viewport.width / 2;
         camera.offsetY = this.viewport.height / 2;
         camera.zoom = 1.0;

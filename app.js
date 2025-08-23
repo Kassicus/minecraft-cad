@@ -204,6 +204,9 @@ class MinecraftCAD {
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       this.cameraController.setViewport(0, 0, rect.width, rect.height);
+      
+      // Initialize camera to center of the viewport  
+      this.cameraController.resetView('top');
     }
     
     // Set up tool button handlers
@@ -448,6 +451,9 @@ class MinecraftCAD {
     if (canvas && this.cameraController) {
       const rect = canvas.getBoundingClientRect();
       this.cameraController.setViewport(0, 0, rect.width, rect.height);
+      
+      // Recenter camera after resize
+      this.cameraController.resetView(this.appStateManager?.currentView || 'top');
     }
   }
 
