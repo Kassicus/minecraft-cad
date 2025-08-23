@@ -1,0 +1,197 @@
+/* MinecraftCAD - Panel Components */
+/* Styles for sidebar panels and their contents */
+
+/* Block Types Panel */
+.block-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.block-item {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-sm);
+  text-align: center;
+  cursor: pointer;
+  font-size: var(--font-status);
+  transition: background var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.block-item:hover {
+  background: var(--hover-bg);
+}
+
+.block-item.active {
+  background: var(--active-bg);
+}
+
+.block-pattern {
+  width: 40px;
+  height: 20px;
+  margin-bottom: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.block-label {
+  font-size: var(--font-status);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* View Controls Panel */
+.view-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.view-button {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-family: inherit;
+  background: transparent;
+  color: inherit;
+  font-size: var(--font-button);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.view-button:hover {
+  background: var(--hover-bg);
+}
+
+.view-button.active {
+  background: var(--focus-bg);
+  font-weight: bold;
+}
+
+/* Height Level Controls */
+.height-controls {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.height-display {
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-header);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.height-buttons {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.height-btn {
+  width: 35px;
+  height: 35px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--font-button);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.height-btn:hover {
+  background: var(--hover-bg);
+}
+
+.height-btn:active {
+  background: var(--active-bg);
+}
+
+.height-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.height-btn:disabled:hover {
+  background: transparent;
+}
+
+/* Panel Animations */
+.panel-content {
+  transition: opacity var(--transition-medium);
+}
+
+.panel.collapsed .panel-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Panel Resize Handle */
+.panel-resize-handle {
+  width: 4px;
+  background: var(--border-color);
+  cursor: col-resize;
+  transition: background var(--transition-fast);
+  position: relative;
+}
+
+.panel-resize-handle:hover {
+  background: var(--accent-blue);
+}
+
+.panel-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  right: -2px;
+  bottom: 0;
+}
+
+/* Responsive Panel Adjustments */
+@media (max-width: 1200px) {
+  .block-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .block-item {
+    padding: var(--spacing-sm);
+  }
+  
+  .block-pattern {
+    width: 30px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 800px) {
+  .view-buttons {
+    gap: var(--spacing-xs);
+  }
+  
+  .view-button {
+    padding: var(--spacing-sm);
+    font-size: var(--font-status);
+  }
+  
+  .height-controls {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+  }
+  
+  .height-btn {
+    width: 30px;
+    height: 30px;
+  }
+}

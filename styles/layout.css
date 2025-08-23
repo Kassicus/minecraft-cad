@@ -1,0 +1,206 @@
+/* MinecraftCAD - Layout System */
+/* Grid structure, main layout, and positioning */
+
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  padding: var(--container-padding);
+  display: flex;
+  flex-direction: column;
+  background: var(--primary-bg);
+}
+
+/* Top Toolbar */
+.toolbar {
+  height: var(--toolbar-height);
+  background: var(--primary-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-xl);
+  gap: var(--spacing-lg);
+  z-index: var(--z-toolbar);
+  flex-shrink: 0;
+  margin-bottom: var(--spacing-xl);
+}
+
+.tool-group {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding-right: var(--spacing-lg);
+  border-right: 1px solid var(--border-color);
+}
+
+.tool-group:last-child {
+  border-right: none;
+}
+
+/* Main Interface Layout */
+.main-interface {
+  border: 2px solid var(--border-color);
+  background: var(--workspace-bg);
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-height: 0;
+}
+
+/* Left Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--secondary-bg);
+  flex-shrink: 0;
+}
+
+/* Main Workspace */
+.workspace {
+  flex: 1;
+  position: relative;
+  background: var(--workspace-bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.workspace-header {
+  height: var(--panel-header-height);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xl);
+  background: var(--primary-bg);
+  flex-shrink: 0;
+}
+
+.project-title {
+  font-size: var(--font-header);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+  background: 
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  overflow: hidden;
+}
+
+.main-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Status Bar */
+.status-bar {
+  height: var(--status-bar-height);
+  background: var(--primary-bg);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-xl);
+  justify-content: space-between;
+  font-size: var(--font-status);
+  flex-shrink: 0;
+}
+
+.status-left, 
+.status-right {
+  display: flex;
+  gap: var(--spacing-xl);
+}
+
+/* Panel System */
+.panel {
+  border-bottom: 1px solid var(--border-color);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel:last-child {
+  border-bottom: none;
+}
+
+.panel-header {
+  background: var(--primary-bg);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.panel-content {
+  padding: var(--spacing-lg);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Grid Layout Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.align-start {
+  align-items: flex-start;
+}
+
+.align-end {
+  align-items: flex-end;
+}
+
+/* Spacing Utilities */
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.gap-xl { gap: var(--spacing-xl); }
+
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+.m-xl { margin: var(--spacing-xl); }

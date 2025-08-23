@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinecraftCAD</title>
+    
+    <!-- CSS Imports -->
+    <link rel="stylesheet" href="styles/variables.css">
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    <link rel="stylesheet" href="styles/components/panels.css">
+    <link rel="stylesheet" href="styles/components/buttons.css">
+    <link rel="stylesheet" href="styles/components/patterns.css">
+    <link rel="stylesheet" href="styles/components/workspace.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Application Title -->
+        <h1 class="app-title">MinecraftCAD</h1>
+        
+        <!-- Top Toolbar -->
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" data-tool="place" title="Place Block">■</button>
+                <button class="tool-btn" data-tool="erase" title="Erase Block">⌫</button>
+                <button class="tool-btn" data-tool="select" title="Select">⬚</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="line" title="Line">╱</button>
+                <button class="tool-btn" data-tool="rectangle" title="Rectangle">▢</button>
+                <button class="tool-btn" data-tool="fill" title="Fill">▣</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="measure" title="Measure">📏</button>
+                <button class="tool-btn" data-tool="pan" title="Pan">✋</button>
+                <button class="tool-btn" data-tool="zoom" title="Zoom">🔍</button>
+            </div>
+        </div>
+        
+        <div class="main-interface">
+            <!-- Left Sidebar -->
+            <div class="sidebar">
+                <!-- Block Types Panel -->
+                <div class="panel">
+                    <div class="panel-header">Block Types</div>
+                    <div class="panel-content">
+                        <div class="block-grid">
+                            <div class="block-item active" data-block-type="blockA">
+                                <div class="block-pattern pattern-solid"></div>
+                                <div class="block-label">Block A</div>
+                            </div>
+                            <div class="block-item" data-block-type="blockB">
+                                <div class="block-pattern pattern-diagonal"></div>
+                                <div class="block-label">Block B</div>
+                            </div>
+                            <div class="block-item" data-block-type="blockC">
+                                <div class="block-pattern pattern-cross"></div>
+                                <div class="block-label">Block C</div>
+                            </div>
+                            <div class="block-item" data-block-type="blockD">
+                                <div class="block-pattern pattern-dots"></div>
+                                <div class="block-label">Block D</div>
+                            </div>
+                            <div class="block-item" data-block-type="blockE">
+                                <div class="block-pattern pattern-brick"></div>
+                                <div class="block-label">Block E</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View Controls Panel -->
+                <div class="panel">
+                    <div class="panel-header">View Controls</div>
+                    <div class="panel-content">
+                        <div class="view-buttons">
+                            <button class="view-button active" data-view="top">Top View</button>
+                            <button class="view-button" data-view="3d">3D View</button>
+                            <button class="view-button" data-view="north">North Elevation</button>
+                            <button class="view-button" data-view="south">South Elevation</button>
+                            <button class="view-button" data-view="east">East Elevation</button>
+                            <button class="view-button" data-view="west">West Elevation</button>
+                        </div>
+                        
+                        <div class="height-controls">
+                            <div class="height-display">Level: <span id="current-level">Ground</span></div>
+                            <div class="height-buttons">
+                                <button class="height-btn" id="level-down">-</button>
+                                <button class="height-btn" id="level-up">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Workspace -->
+            <div class="workspace">
+                <div class="workspace-header">
+                    <div class="project-title">New Project</div>
+                </div>
+                
+                <div class="canvas-area">
+                    <canvas id="main-canvas" class="main-canvas"></canvas>
+                </div>
+                
+                <div class="status-bar">
+                    <div class="status-left">
+                        <span id="cursor-x">X: 0</span>
+                        <span id="cursor-y">Y: 0</span>
+                        <span id="current-level-status">Level: Ground</span>
+                    </div>
+                    <div class="status-right">
+                        <span id="block-count">Blocks: 0</span>
+                        <span id="zoom-level">Zoom: 100%</span>
+                        <span id="current-tool">Tool: Place</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="src/core/MemoryManager.js"></script>
+    <script type="module" src="src/core/BlockDataManager.js"></script>
+    <script type="module" src="src/core/AppStateManager.js"></script>
+    <script type="module" src="src/rendering/BaseRenderer.js"></script>
+    <script type="module" src="src/rendering/TopViewRenderer.js"></script>
+    <script type="module" src="src/rendering/HatchPatternManager.js"></script>
+    <script type="module" src="src/input/CameraController.js"></script>
+    <script type="module" src="src/input/InputController.js"></script>
+    <script type="module" src="src/tools/BaseTool.js"></script>
+    <script type="module" src="src/tools/BlockPlacementTool.js"></script>
+    <script type="module" src="src/ui/UIManager.js"></script>
+    <script type="module" src="src/utils/MathUtils.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

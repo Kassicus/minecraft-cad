@@ -1,0 +1,322 @@
+/* MinecraftCAD - Responsive Design */
+/* Media queries and responsive adjustments */
+
+/* Large Desktop (1800px+) */
+@media (min-width: 1800px) {
+  :root {
+    --sidebar-width: 320px;
+    --font-title: 28px;
+  }
+  
+  .block-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  
+  .tool-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
+  }
+  
+  .toolbar {
+    height: 50px;
+    padding: 0 var(--spacing-xl);
+  }
+}
+
+/* Standard Desktop (1200px - 1799px) */
+@media (min-width: 1200px) and (max-width: 1799px) {
+  /* Default styles already optimized for this range */
+}
+
+/* Medium Screens (800px - 1199px) */
+@media (max-width: 1200px) {
+  :root {
+    --sidebar-width: 240px;
+  }
+  
+  .block-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+  
+  .block-item {
+    padding: var(--spacing-sm);
+    flex-direction: row;
+    text-align: left;
+    gap: var(--spacing-sm);
+  }
+  
+  .block-pattern {
+    width: 30px;
+    height: 15px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  
+  .view-buttons {
+    gap: var(--spacing-xs);
+  }
+  
+  .view-button {
+    padding: var(--spacing-sm);
+    font-size: var(--font-status);
+  }
+  
+  .tool-group {
+    gap: 3px;
+    padding-right: var(--spacing-sm);
+  }
+  
+  .toolbar {
+    gap: var(--spacing-sm);
+    padding: 0 var(--spacing-md);
+  }
+}
+
+/* Small Screens (800px and below) */
+@media (max-width: 800px) {
+  :root {
+    --sidebar-width: 200px;
+    --container-padding: 10px;
+    --font-title: 18px;
+    --spacing-xl: 15px;
+    --spacing-lg: 10px;
+  }
+  
+  .app-title {
+    font-size: var(--font-title);
+    margin-bottom: var(--spacing-lg);
+    letter-spacing: 1px;
+  }
+  
+  .toolbar {
+    height: 40px;
+    gap: var(--spacing-xs);
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .tool-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 8px;
+  }
+  
+  .tool-group {
+    gap: 2px;
+    padding-right: var(--spacing-xs);
+  }
+  
+  .main-interface {
+    border-width: 1px;
+  }
+  
+  .panel-content {
+    padding: var(--spacing-sm);
+  }
+  
+  .block-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 10px;
+  }
+  
+  .block-pattern {
+    width: 25px;
+    height: 12px;
+  }
+  
+  .height-controls {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+  }
+  
+  .height-btn {
+    width: 25px;
+    height: 25px;
+    font-size: 10px;
+  }
+  
+  .status-bar {
+    padding: 0 var(--spacing-sm);
+    font-size: 10px;
+  }
+  
+  .status-left,
+  .status-right {
+    gap: var(--spacing-sm);
+  }
+  
+  .workspace-header {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .project-title {
+    font-size: var(--font-body);
+  }
+}
+
+/* Mobile Portrait (480px and below) */
+@media (max-width: 480px) {
+  :root {
+    --sidebar-width: 180px;
+    --container-padding: 5px;
+    --font-title: 16px;
+  }
+  
+  .app-container {
+    padding: var(--container-padding);
+  }
+  
+  .app-title {
+    font-size: var(--font-title);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .toolbar {
+    height: 35px;
+    padding: 0 var(--spacing-xs);
+  }
+  
+  .tool-btn {
+    width: 25px;
+    height: 25px;
+    font-size: 7px;
+  }
+  
+  .tool-group:not(:first-child) {
+    display: none; /* Hide non-essential tool groups on very small screens */
+  }
+  
+  .block-grid {
+    gap: 2px;
+  }
+  
+  .block-item {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+  
+  .block-pattern {
+    width: 20px;
+    height: 10px;
+  }
+  
+  .view-button {
+    padding: 6px;
+    font-size: 9px;
+  }
+  
+  .height-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+  
+  .status-bar {
+    height: 25px;
+    font-size: 9px;
+  }
+  
+  /* Hide some status items on very small screens */
+  .status-left span:nth-child(3),
+  .status-right span:nth-child(2) {
+    display: none;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-width: 800px) and (orientation: landscape) {
+  .app-title {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .toolbar {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+  
+  .panel-content {
+    padding: var(--spacing-sm);
+  }
+  
+  .height-controls {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .main-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+  
+  .block-pattern {
+    image-rendering: pixelated;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .app-container {
+    background: white;
+    color: black;
+  }
+  
+  .toolbar,
+  .sidebar,
+  .status-bar {
+    display: none;
+  }
+  
+  .workspace {
+    border: none;
+    background: white;
+  }
+  
+  .canvas-area {
+    background: white;
+  }
+  
+  .canvas-area::before {
+    background: 
+      linear-gradient(#ccc 1px, transparent 1px),
+      linear-gradient(90deg, #ccc 1px, transparent 1px);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #fff;
+    --text-primary: #fff;
+    --accent-blue: #fff;
+    --primary-bg: #000;
+    --secondary-bg: #111;
+    --workspace-bg: #000;
+  }
+  
+  .block-pattern {
+    border-color: #fff;
+  }
+}
+
+/* Dark Mode Override (if system prefers light) */
+@media (prefers-color-scheme: light) {
+  /* Keep dark theme as default - this is a blueprint-style app */
+  /* Users can override with a theme toggle if needed in future */
+}

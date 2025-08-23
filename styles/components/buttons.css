@@ -1,0 +1,255 @@
+/* MinecraftCAD - Button Components */
+/* Button variations and interactive elements */
+
+/* Tool Buttons */
+.tool-btn {
+  width: 35px;
+  height: 35px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: var(--font-tool);
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.tool-btn:hover {
+  background: var(--hover-bg);
+}
+
+.tool-btn.active {
+  background: var(--focus-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-blue);
+}
+
+.tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.tool-btn:disabled:hover {
+  background: transparent;
+}
+
+/* Tool Button Icons */
+.tool-btn[data-tool="place"]::before { content: "■"; }
+.tool-btn[data-tool="erase"]::before { content: "⌫"; }
+.tool-btn[data-tool="select"]::before { content: "⬚"; }
+.tool-btn[data-tool="line"]::before { content: "╱"; }
+.tool-btn[data-tool="rectangle"]::before { content: "▢"; }
+.tool-btn[data-tool="fill"]::before { content: "▣"; }
+.tool-btn[data-tool="measure"]::before { content: "📏"; }
+.tool-btn[data-tool="pan"]::before { content: "✋"; }
+.tool-btn[data-tool="zoom"]::before { content: "🔍"; }
+
+/* Primary Button */
+.button-primary {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-button);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-width: 80px;
+}
+
+.button-primary:hover {
+  background: var(--hover-bg);
+}
+
+.button-primary:active,
+.button-primary.active {
+  background: var(--active-bg);
+}
+
+.button-primary:focus {
+  background: var(--focus-bg);
+  box-shadow: 0 0 0 2px var(--accent-blue);
+}
+
+/* Secondary Button */
+.button-secondary {
+  border: 1px solid var(--border-color);
+  background: var(--secondary-bg);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-button);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-width: 80px;
+}
+
+.button-secondary:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-blue);
+}
+
+/* Small Button */
+.button-small {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-status);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-width: 60px;
+}
+
+.button-small:hover {
+  background: var(--hover-bg);
+}
+
+/* Icon Button */
+.button-icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-button);
+}
+
+.button-icon:hover {
+  background: var(--hover-bg);
+}
+
+/* Button Groups */
+.button-group {
+  display: flex;
+  border: 1px solid var(--border-color);
+}
+
+.button-group button {
+  border: none;
+  border-right: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-size: var(--font-button);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.button-group button:last-child {
+  border-right: none;
+}
+
+.button-group button:hover {
+  background: var(--hover-bg);
+}
+
+.button-group button.active {
+  background: var(--active-bg);
+}
+
+/* Toggle Button */
+.button-toggle {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-button);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: var(--spacing-sm) var(--spacing-md);
+  position: relative;
+}
+
+.button-toggle:hover {
+  background: var(--hover-bg);
+}
+
+.button-toggle.active {
+  background: var(--active-bg);
+  border-color: var(--accent-blue);
+}
+
+.button-toggle.active::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid var(--accent-blue);
+  pointer-events: none;
+}
+
+/* Button States */
+.button-success {
+  border-color: var(--success-color);
+  color: var(--success-color);
+}
+
+.button-success:hover {
+  background: rgba(80, 250, 123, 0.1);
+}
+
+.button-error {
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.button-error:hover {
+  background: rgba(255, 85, 85, 0.1);
+}
+
+/* Loading State */
+.button-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.button-loading::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Button Adjustments */
+@media (max-width: 800px) {
+  .tool-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 8px;
+  }
+  
+  .button-primary,
+  .button-secondary {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-status);
+    min-width: 60px;
+  }
+}

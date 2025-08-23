@@ -1,0 +1,171 @@
+/* MinecraftCAD - Base Styles */
+/* Global styles, typography, and resets */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-body);
+  color: var(--text-primary);
+  background: var(--primary-bg);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Hierarchy */
+.app-title {
+  font-size: var(--font-title);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent-blue);
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  flex-shrink: 0;
+}
+
+.panel-header {
+  font-size: var(--font-header);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Button Base Styles */
+button {
+  font-family: inherit;
+  font-size: var(--font-button);
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  outline: none;
+}
+
+button:hover {
+  background: var(--hover-bg);
+}
+
+button:active,
+button.active {
+  background: var(--active-bg);
+}
+
+button:focus {
+  background: var(--focus-bg);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  background: transparent;
+}
+
+/* Form Elements */
+input, select, textarea {
+  font-family: inherit;
+  font-size: var(--font-body);
+  color: var(--text-primary);
+  background: var(--workspace-bg);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  background: var(--hover-bg);
+  border-color: var(--accent-blue);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-blue);
+}
+
+/* Selection Styling */
+::selection {
+  background: var(--accent-blue);
+  color: var(--workspace-bg);
+}
+
+::-moz-selection {
+  background: var(--accent-blue);
+  color: var(--workspace-bg);
+}
+
+/* Focus Outline Reset */
+*:focus {
+  outline: none;
+}
+
+/* Canvas Styling */
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.grab {
+  cursor: grab;
+}
+
+.grabbing {
+  cursor: grabbing;
+}
+
+.crosshair {
+  cursor: crosshair;
+}
