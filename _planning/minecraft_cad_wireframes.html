@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinecraftCAD - UI Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e3a5f;
+            color: #e8f4f8;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .wireframe-container {
+            width: 100vw;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .wireframe-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #64b5f6;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+        
+        .main-interface {
+            border: 2px solid #64b5f6;
+            background: #0d1929;
+            flex: 1;
+            display: flex;
+            position: relative;
+            min-height: 0;
+        }
+        
+        /* Left Sidebar */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            border-right: 1px solid #64b5f6;
+            display: flex;
+            flex-direction: column;
+            background: #122032;
+        }
+        
+        .panel {
+            border-bottom: 1px solid #64b5f6;
+            flex: 1;
+        }
+        
+        .panel:last-child {
+            border-bottom: none;
+        }
+        
+        .panel-header {
+            background: #1e3a5f;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #64b5f6;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            height: calc(100% - 45px);
+            overflow-y: auto;
+        }
+        
+        /* Block Types Panel */
+        .block-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .block-item {
+            border: 1px solid #64b5f6;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 11px;
+        }
+        
+        .block-item:hover {
+            background: rgba(100, 181, 246, 0.1);
+        }
+        
+        .block-item.active {
+            background: rgba(100, 181, 246, 0.2);
+        }
+        
+        .block-pattern {
+            width: 40px;
+            height: 20px;
+            margin: 0 auto 8px;
+            border: 1px solid #64b5f6;
+        }
+        
+        .pattern-solid { background: #666; }
+        .pattern-diagonal { 
+            background: linear-gradient(45deg, transparent 40%, #888 40%, #888 60%, transparent 60%);
+            background-size: 8px 8px;
+        }
+        .pattern-cross {
+            background: 
+                linear-gradient(45deg, transparent 40%, #444 40%, #444 60%, transparent 60%),
+                linear-gradient(-45deg, transparent 40%, #444 40%, #444 60%, transparent 60%);
+            background-size: 8px 8px;
+        }
+        .pattern-dots {
+            background: radial-gradient(circle, #555 30%, transparent 30%);
+            background-size: 8px 8px;
+        }
+        .pattern-brick {
+            background: 
+                linear-gradient(0deg, #777 50%, transparent 50%),
+                linear-gradient(90deg, #777 50%, transparent 50%);
+            background-size: 16px 8px, 8px 16px;
+        }
+        
+        /* View Controls Panel */
+        .view-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .view-button {
+            border: 1px solid #64b5f6;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+            background: transparent;
+            color: inherit;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .view-button:hover {
+            background: rgba(100, 181, 246, 0.1);
+        }
+        
+        .view-button.active {
+            background: rgba(100, 181, 246, 0.3);
+        }
+        
+        .height-controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #64b5f6;
+        }
+        
+        .height-display {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .height-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .height-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #64b5f6;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .height-btn:hover {
+            background: rgba(100, 181, 246, 0.1);
+        }
+        
+        /* Main Workspace */
+        .workspace {
+            flex: 1;
+            position: relative;
+            background: #0a1420;
+        }
+        
+        .workspace-header {
+            height: 45px;
+            border-bottom: 1px solid #64b5f6;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            padding: 0 20px;
+            background: #1e3a5f;
+        }
+        
+        .project-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .canvas-area {
+            height: calc(100% - 45px - 30px);
+            position: relative;
+            background: 
+                linear-gradient(rgba(100, 181, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 181, 246, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .canvas-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #64b5f6;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            height: 30px;
+            background: #1e3a5f;
+            border-top: 1px solid #64b5f6;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+        
+        .status-left, .status-right {
+            display: flex;
+            gap: 20px;
+        }
+        
+        /* Top Toolbar */
+        .toolbar {
+            position: absolute;
+            top: -50px;
+            left: 0;
+            right: 0;
+            height: 45px;
+            background: #1e3a5f;
+            border: 1px solid #64b5f6;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+            z-index: 20;
+        }
+        
+        .tool-group {
+            display: flex;
+            gap: 5px;
+            padding-right: 15px;
+            border-right: 1px solid #64b5f6;
+        }
+        
+        .tool-group:last-child {
+            border-right: none;
+        }
+        
+        .tool-btn {
+            width: 35px;
+            height: 35px;
+            border: 1px solid #64b5f6;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 10px;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(100, 181, 246, 0.1);
+        }
+        
+        .tool-btn.active {
+            background: rgba(100, 181, 246, 0.3);
+        }
+        
+        /* Annotations */
+        .annotation {
+            position: absolute;
+            background: rgba(30, 58, 95, 0.9);
+            border: 1px solid #64b5f6;
+            padding: 8px 12px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .annotation::before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 1px;
+            background: #64b5f6;
+        }
+        
+        .ann-1 { top: 60px; right: 20px; }
+        .ann-1::before { left: -8px; top: 50%; }
+        
+        .ann-2 { bottom: 120px; left: 20px; }
+        .ann-2::before { right: -8px; top: 50%; }
+        
+        .ann-3 { top: 200px; left: -120px; }
+        .ann-3::before { right: -8px; top: 50%; }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+                min-width: 240px;
+            }
+        }
+        
+        @media (max-width: 800px) {
+            .wireframe-container {
+                padding: 10px;
+            }
+            .sidebar {
+                width: 200px;
+                min-width: 200px;
+            }
+            .wireframe-title {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+        }
+        
+        @media (min-width: 1800px) {
+            .sidebar {
+                width: 320px;
+                min-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+        <h1 class="wireframe-title">MinecraftCAD - Interface Layout</h1>
+        
+        <!-- Top Toolbar -->
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" title="Place Block">■</button>
+                <button class="tool-btn" title="Erase">⌫</button>
+                <button class="tool-btn" title="Select">⬚</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" title="Line">╱</button>
+                <button class="tool-btn" title="Rectangle">▢</button>
+                <button class="tool-btn" title="Fill">▣</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" title="Measure">📏</button>
+                <button class="tool-btn" title="Pan">✋</button>
+                <button class="tool-btn" title="Zoom">🔍</button>
+            </div>
+        </div>
+        
+        <div class="main-interface">
+            <!-- Left Sidebar -->
+            <div class="sidebar">
+                <!-- Block Types Panel -->
+                <div class="panel">
+                    <div class="panel-header">Block Types</div>
+                    <div class="panel-content">
+                        <div class="block-grid">
+                            <div class="block-item active">
+                                <div class="block-pattern pattern-solid"></div>
+                                Block A
+                            </div>
+                            <div class="block-item">
+                                <div class="block-pattern pattern-diagonal"></div>
+                                Block B
+                            </div>
+                            <div class="block-item">
+                                <div class="block-pattern pattern-cross"></div>
+                                Block C
+                            </div>
+                            <div class="block-item">
+                                <div class="block-pattern pattern-dots"></div>
+                                Block D
+                            </div>
+                            <div class="block-item">
+                                <div class="block-pattern pattern-brick"></div>
+                                Block E
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View Controls Panel -->
+                <div class="panel">
+                    <div class="panel-header">View Controls</div>
+                    <div class="panel-content">
+                        <div class="view-buttons">
+                            <button class="view-button active">Top View</button>
+                            <button class="view-button">3D View</button>
+                            <button class="view-button">North Elevation</button>
+                            <button class="view-button">South Elevation</button>
+                            <button class="view-button">East Elevation</button>
+                            <button class="view-button">West Elevation</button>
+                        </div>
+                        
+                        <div class="height-controls">
+                            <div class="height-display">Level: Ground</div>
+                            <div class="height-buttons">
+                                <button class="height-btn">-</button>
+                                <button class="height-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Workspace -->
+            <div class="workspace">
+                <div class="workspace-header">
+                    <div class="project-title">Castle_Tower_v1.mcd</div>
+                </div>
+                
+                <div class="canvas-area">
+                    <div class="canvas-placeholder">
+                        [ BLUEPRINT CANVAS ]<br>
+                        <small>100 × 100 Grid • Top View • Level: Ground</small>
+                    </div>
+                    
+                    <!-- Annotations -->
+                    <div class="annotation ann-1">
+                        Primary workspace<br>
+                        Blueprint grid overlay
+                    </div>
+                    
+                    <div class="annotation ann-2">
+                        Block placement tools<br>
+                        Drawing & measurement
+                    </div>
+                </div>
+                
+                <div class="status-bar">
+                    <div class="status-left">
+                        <span>X: 42</span>
+                        <span>Y: 28</span>
+                        <span>Level: Ground</span>
+                    </div>
+                    <div class="status-right">
+                        <span>Blocks: 127</span>
+                        <span>Zoom: 100%</span>
+                        <span>Tool: Place</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar annotation -->
+            <div class="annotation ann-3">
+                Block type selection<br>
+                with hatch patterns<br>
+                + View switching controls
+            </div>
+        </div>
+    </div>
+</body>
+</html>
