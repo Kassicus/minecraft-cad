@@ -4,7 +4,6 @@
  */
 
 import { BaseTool } from './BaseTool.js';
-import { coordinateSystem } from '../utils/CoordinateSystem.js';
 
 export class BlockPlacementTool extends BaseTool {
   constructor() {
@@ -40,10 +39,23 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse down - start placing blocks
    */
-  onMouseDown(event, worldPos) {
+  onMouseDown(worldPos, event) {
     if (!worldPos || !this.blockDataManager) return false;
 
-    const gridPos = this.worldToGrid(worldPos);
+    // Use the corrected coordinate system: snap to grid cell center
+    const snappedPos = this.snapToGrid(worldPos);
+    
+    // Debug coordinate transformation
+    console.log(`Block placement debug: worldPos=(${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}), snappedPos=(${snappedPos.x.toFixed(2)}, ${snappedPos.y.toFixed(2)})`);
+    
+    // Convert snapped world position to grid coordinates for storage
+    const gridPos = {
+      x: Math.floor(snappedPos.x / 20), // 20 is blockSize
+      y: Math.floor(snappedPos.y / 20),
+      z: this.appStateManager ? this.appStateManager.currentLevel : 0
+    };
+    
+    console.log(`Snapped to grid cell: (${gridPos.x}, ${gridPos.y})`);
     
     // Validate coordinates
     if (!this.isValidCoordinate(gridPos.x, gridPos.y, gridPos.z)) {
@@ -62,10 +74,18 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse move - continue placing blocks if dragging
    */
-  onMouseMove(event, worldPos) {
+  onMouseMove(worldPos, event) {
     if (!worldPos) return false;
 
-    const gridPos = this.worldToGrid(worldPos);
+    // Use the corrected coordinate system: snap to grid cell center
+    const snappedPos = this.snapToGrid(worldPos);
+    
+    // Convert snapped world position to grid coordinates for storage
+    const gridPos = {
+      x: Math.floor(snappedPos.x / 20), // 20 is blockSize
+      y: Math.floor(snappedPos.y / 20),
+      z: this.appStateManager ? this.appStateManager.currentLevel : 0
+    };
 
     if (this.isPlacing && this.settings.continuousPlacement) {
       // Continue placing blocks while dragging
@@ -85,7 +105,7 @@ export class BlockPlacementTool extends BaseTool {
   /**
    * Handle mouse up - stop placing blocks
    */
-  onMouseUp(event, worldPos) {
+  onMouseUp(worldPos, event) {
     this.isPlacing = false;
     this.placedBlocks.clear();
     this.clearPreview();
@@ -157,19 +177,16 @@ export class BlockPlacementTool extends BaseTool {
    * Convert world position to grid position
    */
   worldToGrid(worldPos) {
-    const gridPos = coordinateSystem.worldToGrid(worldPos.x, worldPos.y);
-    return {
-      x: gridPos.x,
-      y: gridPos.y,
-      z: this.appStateManager ? this.appStateManager.currentLevel : 0
-    };
+    // Use the BaseTool's worldToGrid method which handles coordinate transformation
+    return super.worldToGrid(worldPos);
   }
 
   /**
    * Check if coordinates are valid
    */
   isValidCoordinate(x, y, z) {
-    return x >= 0 && x < 100 && y >= 0 && y < 100 && z >= 0 && z < 50;
+    // Remove x,y restrictions, keep z limit for height
+    return z >= 0 && z < 50;
   }
 
   /**
@@ -219,3 +236,4 @@ export class BlockPlacementTool extends BaseTool {
     console.log('Block placement tool deactivated');
   }
 }
+

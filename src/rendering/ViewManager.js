@@ -45,6 +45,15 @@ export class ViewManager {
    */
   connect(appStateManager) {
     this.appStateManager = appStateManager;
+    
+    // Connect all renderers to the app state manager
+    this.renderers.forEach(renderer => {
+      if (renderer.connect) {
+        renderer.connect(appStateManager);
+      }
+    });
+    
+    console.log('ViewManager connected to app state manager');
   }
 
   /**
@@ -91,14 +100,21 @@ export class ViewManager {
       const canvas = document.getElementById(id);
       if (canvas) {
         const viewType = canvas.dataset.view;
-        this.canvases.set(viewType, canvas);
-        
-        // Setup canvas properties
-        this.setupCanvas(canvas);
+        if (viewType) {
+          this.canvases.set(viewType, canvas);
+          console.log(`Canvas ${id} mapped to view: ${viewType}`);
+          
+          // Setup canvas properties
+          this.setupCanvas(canvas);
+        } else {
+          console.warn(`Canvas ${id} missing data-view attribute`);
+        }
       } else {
         console.warn(`Canvas element ${id} not found`);
       }
     });
+    
+    console.log('Canvas mapping:', Array.from(this.canvases.entries()));
   }
 
   /**
@@ -123,7 +139,14 @@ export class ViewManager {
     // Top view renderer
     const topCanvas = this.canvases.get('top');
     if (topCanvas) {
-      this.renderers.set('top', new TopViewRenderer(topCanvas));
+      const topRenderer = new TopViewRenderer(topCanvas);
+      this.renderers.set('top', topRenderer);
+      
+      // Connect renderer if app state manager is already available
+      if (this.appStateManager && topRenderer.connect) {
+        topRenderer.connect(this.appStateManager);
+      }
+      
       console.log('Top view renderer initialized');
     }
     
@@ -147,8 +170,14 @@ export class ViewManager {
     elevationViews.forEach(direction => {
       const canvas = this.canvases.get(direction);
       if (canvas) {
-        this.renderers.set(direction, new ElevationRenderer(canvas, direction));
-        console.log(`${direction} elevation renderer initialized`);
+        const elevationRenderer = new ElevationRenderer(canvas, direction);
+        
+        // Initialize auto-centering flags
+        elevationRenderer.hasBeenCentered = false;
+        elevationRenderer.lastBlockCount = 0;
+        
+        this.renderers.set(direction, elevationRenderer);
+        console.log(`${direction} elevation renderer initialized with auto-centering`);
       }
     });
     
@@ -180,6 +209,14 @@ export class ViewManager {
     }
     
     console.log(`Switching from ${this.currentView} to ${viewType}`);
+    
+    // Auto-center elevation views when switching to them
+    if (['north', 'south', 'east', 'west'].includes(viewType) && this.appStateManager) {
+      const blockData = this.appStateManager.blockDataManager;
+      if (blockData && targetRenderer.resetView) {
+        this.autoCenterElevationView(viewType, targetRenderer, blockData);
+      }
+    }
     
     if (animate && this.settings.enableTransitions) {
       this.animateViewTransition(viewType);
@@ -264,6 +301,12 @@ export class ViewManager {
     const cameraState = cameraStates[this.currentView];
     
     try {
+      // Auto-center elevation views when they become active
+      if (['north', 'south', 'east', 'west'].includes(this.currentView) && 
+          this.shouldAutoCenterElevationView(this.currentView, renderer, blockData)) {
+        this.autoCenterElevationView(this.currentView, renderer, blockData);
+      }
+      
       renderer.render(blockData, cameraState, currentLevel);
     } catch (error) {
       console.error(`Error rendering ${this.currentView} view:`, error);
@@ -310,11 +353,59 @@ export class ViewManager {
       if (viewType !== this.currentView) {
         const cameraState = cameraStates[viewType];
         try {
+          // Auto-center elevation views on first render or when block data changes
+          if (this.shouldAutoCenterElevationView(viewType, renderer, blockData)) {
+            this.autoCenterElevationView(viewType, renderer, blockData);
+          }
+          
           renderer.render(blockData, cameraState, currentLevel);
         } catch (error) {
           console.error(`Error updating ${viewType} view:`, error);
         }
       }
+    }
+  }
+
+  /**
+   * Check if elevation view should be auto-centered
+   */
+  shouldAutoCenterElevationView(viewType, renderer, blockData) {
+    // Only auto-center elevation views
+    if (!['north', 'south', 'east', 'west'].includes(viewType)) {
+      return false;
+    }
+    
+    // Check if this is the first render or if block data has changed significantly
+    if (!renderer.hasBeenCentered) {
+      return true;
+    }
+    
+    // Check if block count has changed significantly (indicating new blocks placed)
+    const currentBlockCount = blockData ? blockData.getBlockCount() : 0;
+    if (Math.abs(currentBlockCount - (renderer.lastBlockCount || 0)) > 5) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Auto-center an elevation view on the placed blocks
+   */
+  autoCenterElevationView(viewType, renderer, blockData) {
+    if (!renderer.resetView || !blockData) return;
+    
+    try {
+      console.log(`Auto-centering ${viewType} elevation view...`);
+      renderer.resetView(blockData);
+      
+      // Mark as centered and store block count
+      renderer.hasBeenCentered = true;
+      renderer.lastBlockCount = blockData.getBlockCount();
+      
+      console.log(`${viewType} elevation view auto-centered successfully`);
+    } catch (error) {
+      console.error(`Failed to auto-center ${viewType} elevation view:`, error);
     }
   }
 
@@ -326,6 +417,33 @@ export class ViewManager {
     if (renderer && renderer.forceUpdate) {
       renderer.forceUpdate();
     }
+  }
+
+  /**
+   * Manually trigger auto-centering of all elevation views
+   */
+  centerAllElevationViews() {
+    if (!this.appStateManager || !this.appStateManager.blockDataManager) {
+      console.warn('Cannot center elevation views: no block data available');
+      return;
+    }
+    
+    const blockData = this.appStateManager.blockDataManager;
+    
+    ['north', 'south', 'east', 'west'].forEach(direction => {
+      const renderer = this.renderers.get(direction);
+      if (renderer && renderer.resetView) {
+        try {
+          console.log(`Manually centering ${direction} elevation view...`);
+          renderer.resetView(blockData);
+          renderer.hasBeenCentered = true;
+          renderer.lastBlockCount = blockData.getBlockCount();
+          console.log(`${direction} elevation view centered successfully`);
+        } catch (error) {
+          console.error(`Failed to center ${direction} elevation view:`, error);
+        }
+      }
+    });
   }
 
   /**
@@ -348,7 +466,9 @@ export class ViewManager {
    * Get current renderer
    */
   getCurrentRenderer() {
-    return this.renderers.get(this.currentView);
+    // Use the app state manager's current view if available
+    const currentView = this.appStateManager ? this.appStateManager.getCurrentView() : this.currentView;
+    return this.renderers.get(currentView);
   }
 
   /**
@@ -362,7 +482,9 @@ export class ViewManager {
    * Get current canvas
    */
   getCurrentCanvas() {
-    return this.canvases.get(this.currentView);
+    // Use the app state manager's current view if available
+    const currentView = this.appStateManager ? this.appStateManager.getCurrentView() : this.currentView;
+    return this.canvases.get(currentView);
   }
 
   /**

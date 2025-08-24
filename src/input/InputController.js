@@ -76,6 +76,18 @@ export class InputController {
   }
 
   /**
+   * Connect to app state manager for event handling
+   */
+  connectToAppState() {
+    // Listen for render requests from app state manager
+    if (this.appStateManager) {
+      this.appStateManager.on('renderRequested', () => {
+        this.handleRenderRequest();
+      });
+    }
+  }
+
+  /**
    * Setup all event listeners
    */
   setupEventListeners() {
@@ -84,6 +96,16 @@ export class InputController {
     if (!this.canvas) {
       console.warn('Canvas not found, input controller disabled');
       return;
+    }
+    
+    // Set up canvas update when view changes
+    if (this.viewManager) {
+      // Listen for view change events from the app state manager
+      if (this.appStateManager) {
+        this.appStateManager.on('viewChanged', (event) => {
+          this.updateCanvasForView(event.current);
+        });
+      }
     }
     
     // Mouse events
@@ -283,7 +305,17 @@ export class InputController {
     const centerX = event.clientX - this.canvas.getBoundingClientRect().left;
     const centerY = event.clientY - this.canvas.getBoundingClientRect().top;
     
-    if (this.cameraController) {
+    const currentView = this.appStateManager?.getCurrentView() || 'top';
+    
+    if (['north', 'south', 'east', 'west'].includes(currentView)) {
+      // Handle elevation view zooming
+      const currentRenderer = this.viewManager?.getCurrentRenderer();
+      if (currentRenderer && currentRenderer.zoom) {
+        console.log(`Zooming elevation view: factor=${delta}`);
+        currentRenderer.zoom(delta, centerX, centerY);
+      }
+    } else if (this.cameraController) {
+      // Handle top view zooming
       this.cameraController.zoom(delta, centerX, centerY);
     }
     
@@ -301,11 +333,11 @@ export class InputController {
   }
 
   /**
-   * Handle middle mouse button (pan) - DISABLED
+   * Handle middle mouse button (pan)
    */
   handleMiddleMouseDown(worldPos, event) {
-    // Panning disabled - do nothing
-    // this.gestures.isPanning = true;
+    // Enable panning with middle mouse button
+    this.gestures.isPanning = true;
   }
 
   /**
@@ -319,12 +351,90 @@ export class InputController {
   }
 
   /**
-   * Handle panning gesture - DISABLED
+   * Update canvas reference when switching views
+   */
+  updateCanvasForView(viewType) {
+    if (this.viewManager) {
+      const oldCanvas = this.canvas;
+      this.canvas = this.viewManager.getCurrentCanvas();
+      console.log(`Input controller updated canvas for view: ${viewType}`, {
+        oldCanvas: oldCanvas?.id,
+        newCanvas: this.canvas?.id,
+        viewType: viewType
+      });
+      
+      // Re-setup event listeners on the new canvas
+      if (this.canvas && this.canvas !== oldCanvas) {
+        this.setupCanvasEventListeners();
+      }
+    }
+  }
+
+  /**
+   * Setup event listeners on the current canvas
+   */
+  setupCanvasEventListeners() {
+    if (!this.canvas) return;
+    
+    // Remove old event listeners
+    this.removeEventListeners(this.canvas);
+    
+    // Add new event listeners
+    this.addEventListeners(this.canvas, [
+      ['mousedown', this.handleMouseDown.bind(this)],
+      ['mousemove', this.handleMouseMove.bind(this)],
+      ['mouseup', this.handleMouseUp.bind(this)],
+      ['wheel', this.handleWheel.bind(this)],
+      ['contextmenu', this.handleContextMenu.bind(this)]
+    ]);
+    
+    // Touch events
+    this.addEventListeners(this.canvas, [
+      ['touchstart', this.handleTouchStart.bind(this)],
+      ['touchmove', this.handleTouchMove.bind(this)],
+      ['touchend', this.handleTouchEnd.bind(this)]
+    ]);
+    
+    console.log(`Event listeners set up on canvas: ${this.canvas.id}`);
+  }
+
+  /**
+   * Remove event listeners from a canvas
+   */
+  removeEventListeners(canvas) {
+    if (!canvas) return;
+    
+    // Remove all event listeners for this canvas
+    this.eventListeners.forEach(({ element, type, handler }) => {
+      if (element === canvas) {
+        element.removeEventListener(type, handler);
+      }
+    });
+    
+    // Filter out removed listeners
+    this.eventListeners = this.eventListeners.filter(
+      ({ element }) => element !== canvas
+    );
+    
+    console.log(`Event listeners removed from canvas: ${canvas.id}`);
+  }
+
+  /**
+   * Handle panning gesture
    */
   handlePanning(deltaX, deltaY) {
-    // Panning disabled - do nothing
-    /*
-    if (this.cameraController) {
+    const currentView = this.appStateManager?.getCurrentView() || 'top';
+    
+    if (['north', 'south', 'east', 'west'].includes(currentView)) {
+      // Handle elevation view panning
+      const currentRenderer = this.viewManager?.getCurrentRenderer();
+      if (currentRenderer && currentRenderer.pan) {
+        console.log(`Panning elevation view: deltaX=${deltaX}, deltaY=${deltaY}`);
+        currentRenderer.pan(deltaX, deltaY);
+      }
+    } else if (this.cameraController) {
+      // Handle top view panning
+      console.log(`Panning top view: deltaX=${deltaX}, deltaY=${deltaY}`);
       this.cameraController.pan(deltaX, deltaY);
     }
     
@@ -334,23 +444,20 @@ export class InputController {
     
     // Trigger re-render
     this.requestRender();
-    */
   }
 
   /**
-   * Detect pan/zoom gestures - PANNING DISABLED
+   * Detect pan/zoom gestures
    */
   detectGestures(deltaX, deltaY) {
-    // Panning disabled - don't detect pan gestures
-    /*
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
     if (!this.gestures.isPanning && distance > this.gestures.panThreshold) {
       if (this.mouse.button === 1 || this.keyboard.modifiers.alt) {
+        console.log(`Panning gesture detected: button=${this.mouse.button}, distance=${distance.toFixed(2)}`);
         this.gestures.isPanning = true;
       }
     }
-    */
   }
 
   /**
@@ -713,6 +820,16 @@ export class InputController {
     // Request a render update
     if (this.appStateManager) {
       this.appStateManager.emit('renderRequested');
+    }
+  }
+
+  /**
+   * Handle render requests
+   */
+  handleRenderRequest() {
+    // Trigger immediate render
+    if (this.appStateManager) {
+      this.appStateManager.emit('immediateRender');
     }
   }
 

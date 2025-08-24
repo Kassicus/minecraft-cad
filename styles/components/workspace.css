@@ -16,10 +16,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(var(--grid-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
+  background: var(--workspace-bg);
   pointer-events: none;
   z-index: 1;
 }
@@ -78,34 +75,9 @@
   cursor: pointer;
 }
 
-/* Grid Zoom Levels */
-.canvas-area.zoom-out::before {
-  background-size: calc(var(--grid-size) * 0.5) calc(var(--grid-size) * 0.5);
-}
+/* Grid Zoom Levels - Removed CSS grid zoom, using JavaScript grid instead */
 
-.canvas-area.zoom-in::before {
-  background-size: calc(var(--grid-size) * 2) calc(var(--grid-size) * 2);
-}
-
-.canvas-area.zoom-far::before {
-  background-size: calc(var(--grid-size) * 4) calc(var(--grid-size) * 4);
-}
-
-/* Grid Emphasis Lines (every 10 units) */
-.canvas-area.show-major-grid::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(rgba(100, 181, 246, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100, 181, 246, 0.3) 1px, transparent 1px);
-  background-size: calc(var(--grid-size) * 10) calc(var(--grid-size) * 10);
-  pointer-events: none;
-  z-index: 1;
-}
+/* Grid Emphasis Lines (every 10 units) - Removed CSS grid, using JavaScript grid instead */
 
 /* Canvas Loading State */
 .canvas-area.loading::before {

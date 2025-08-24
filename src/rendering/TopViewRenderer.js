@@ -37,7 +37,17 @@ export class TopViewRenderer extends BaseRenderer {
     this.lastRenderBounds = null;
     this.visibleBlocks = [];
     
+    // Connected systems
+    this.appStateManager = null;
+    
     this.setupCanvas();
+  }
+
+  /**
+   * Connect to other systems
+   */
+  connect(appStateManager) {
+    this.appStateManager = appStateManager;
   }
 
   /**
@@ -75,6 +85,34 @@ export class TopViewRenderer extends BaseRenderer {
     this.drawOverlays();
     
     this.endPerformanceMeasurement();
+  }
+
+  /**
+   * Calculate visible area for culling
+   */
+  calculateCullingBounds() {
+    // Calculate visible bounds based on camera position and zoom
+    // This provides better performance for large builds
+    const margin = 50; // Extra margin for smooth scrolling
+    
+    // Convert screen corners to world coordinates
+    const topLeft = this.screenToWorld(-margin, -margin, 0);
+    const bottomRight = this.screenToWorld(
+      this.viewportBounds.width + margin, 
+      this.viewportBounds.height + margin, 
+      0
+    );
+    
+    // Convert to grid coordinates
+    const topLeftGrid = coordinateSystem.worldToGrid(topLeft.x, topLeft.y);
+    const bottomRightGrid = coordinateSystem.worldToGrid(bottomRight.x, bottomRight.y);
+    
+    return {
+      minX: Math.floor(topLeftGrid.x) - 5,
+      maxX: Math.ceil(bottomRightGrid.x) + 5,
+      minY: Math.floor(topLeftGrid.y) - 5,
+      maxY: Math.ceil(bottomRightGrid.y) + 5
+    };
   }
 
   /**
@@ -125,8 +163,13 @@ export class TopViewRenderer extends BaseRenderer {
       
       const screenPos = this.gridToScreen(block.x, block.y);
       
-      // Draw block with pattern
-      this.drawBlock(ctx, screenPos.x, screenPos.y, blockSize, block.type, 1.0);
+      // Debug block rendering positions
+      if (block.x === -17 && block.y === -7) {
+        console.log(`Block at grid (${block.x}, ${block.y}): world=(${(block.x + 0.5) * 20}, ${(block.y + 0.5) * 20}), screen=(${screenPos.x.toFixed(2)}, ${screenPos.y.toFixed(2)})`);
+      }
+      
+      // Draw block centered on grid cell center
+      this.drawBlock(ctx, screenPos.x - blockSize/2, screenPos.y - blockSize/2, blockSize, block.type, 1.0);
     }
     
     ctx.restore();
@@ -164,8 +207,8 @@ export class TopViewRenderer extends BaseRenderer {
         
         const screenPos = this.gridToScreen(block.x, block.y);
         
-        // Draw ghost block with reduced alpha
-        this.drawBlock(ctx, screenPos.x, screenPos.y, blockSize, block.type, this.settings.ghostBlockAlpha);
+        // Draw ghost block centered on grid cell center
+        this.drawBlock(ctx, screenPos.x - blockSize/2, screenPos.y - blockSize/2, blockSize, block.type, this.settings.ghostBlockAlpha);
       }
     }
     
@@ -206,6 +249,9 @@ export class TopViewRenderer extends BaseRenderer {
     if (this.settings.showCoordinates) {
       this.drawCoordinateAxes();
     }
+
+    // Draw cursor crosshair
+    this.drawCursor();
   }
 
   /**
@@ -260,6 +306,67 @@ export class TopViewRenderer extends BaseRenderer {
     // Axis labels
     this.drawTextWithBackground('X', origin.x + 110, origin.y, { align: 'left' });
     this.drawTextWithBackground('Y', origin.x, origin.y + 110, { align: 'center' });
+  }
+
+  /**
+   * Draw cursor crosshair at center of grid cell (where blocks will be placed)
+   */
+  drawCursor() {
+    if (!this.context || !this.appStateManager) return;
+    
+    const mousePos = this.appStateManager.getMousePosition();
+    if (!mousePos || (mousePos.x === 0 && mousePos.y === 0)) return;
+    
+    // Convert mouse screen position to world coordinates
+    const worldPos = this.screenToWorld(mousePos.x, mousePos.y);
+    
+    // SIMPLE APPROACH: Calculate grid cell center directly
+    const gridX = Math.floor(worldPos.x / 20); // 20 is blockSize
+    const gridY = Math.floor(worldPos.y / 20);
+    
+    // Calculate center of this grid cell in world coordinates
+    const centerWorldX = (gridX + 0.5) * 20;
+    const centerWorldY = (gridY + 0.5) * 20;
+    
+    // Convert to screen coordinates
+    const centerScreenX = centerWorldX * this.camera.zoom + this.camera.offsetX;
+    const centerScreenY = centerWorldY * this.camera.zoom + this.camera.offsetY;
+    
+    console.log(`Simple calc: world(${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}) -> grid(${gridX}, ${gridY}) -> center world(${centerWorldX}, ${centerWorldY}) -> screen(${centerScreenX.toFixed(2)}, ${centerScreenY.toFixed(2)})`);
+    
+    const ctx = this.context;
+    ctx.save();
+    
+    // Draw crosshair cursor at center of grid cell
+    ctx.strokeStyle = '#64b5f6';
+    ctx.lineWidth = 2;
+    
+    const size = 8;
+    ctx.beginPath();
+    
+    // Horizontal line
+    ctx.moveTo(centerScreenX - size, centerScreenY);
+    ctx.lineTo(centerScreenX + size, centerScreenY);
+    
+    // Vertical line
+    ctx.moveTo(centerScreenX, centerScreenY - size);
+    ctx.lineTo(centerScreenX, centerScreenY + size);
+    
+    ctx.stroke();
+    
+    // DEBUG: Draw a bright red dot at the exact position where we think the cursor should be
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(centerScreenX, centerScreenY, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // DEBUG: Also draw the mouse position in green to see the difference
+    ctx.fillStyle = 'lime';
+    ctx.beginPath();
+    ctx.arc(mousePos.x, mousePos.y, 2, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.restore();
   }
 
   /**
@@ -322,7 +429,7 @@ export class TopViewRenderer extends BaseRenderer {
       
       this.camera.zoom = newZoom;
       
-      const newScreenPoint = this.worldToScreen(worldPoint.x, worldPoint.y, 0);
+      const newScreenPoint = this.worldToScreen(worldPoint.x, worldPoint.y);
       this.camera.offsetX += centerX - newScreenPoint.x;
       this.camera.offsetY += centerY - newScreenPoint.y;
     }
@@ -337,10 +444,10 @@ export class TopViewRenderer extends BaseRenderer {
     const bounds = blockData.getBounds();
     
     if (bounds.minX === bounds.maxX && bounds.minY === bounds.maxY) {
-      // No blocks or single block - center view
+      // No blocks or single block - center view with closer zoom
       this.camera.offsetX = this.viewportBounds.width / 2;
       this.camera.offsetY = this.viewportBounds.height / 2;
-      this.camera.zoom = 1.0;
+      this.camera.zoom = 3.0; // Start with closer zoom for better detail
       return;
     }
     
@@ -351,7 +458,8 @@ export class TopViewRenderer extends BaseRenderer {
     const scaleX = (this.viewportBounds.width * 0.8) / buildWidth;
     const scaleY = (this.viewportBounds.height * 0.8) / buildHeight;
     
-    this.camera.zoom = Math.min(scaleX, scaleY, 2.0);
+    // Start with closer zoom for better detail view
+    this.camera.zoom = Math.min(scaleX, scaleY, 3.0);
     
     // Center the build
     const centerX = (bounds.minX + bounds.maxX) * this.settings.blockSize / 2;
@@ -381,7 +489,7 @@ export class TopViewRenderer extends BaseRenderer {
     
     this.context.save();
     this.context.fillStyle = color;
-    this.context.fillRect(screenPos.x, screenPos.y, blockSize, blockSize);
+    this.context.fillRect(screenPos.x - blockSize/2, screenPos.y - blockSize/2, blockSize, blockSize);
     this.context.restore();
   }
 

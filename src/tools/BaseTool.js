@@ -298,7 +298,8 @@ export class BaseTool {
    * Check if coordinates are valid
    */
   isValidCoordinate(x, y, z) {
-    return x >= 0 && x < 100 && y >= 0 && y < 100 && z >= 0 && z < 50;
+    // Remove x,y restrictions, keep z limit for height
+    return z >= 0 && z < 50;
   }
 
   /**

@@ -315,8 +315,6 @@ export class HatchPatternManager {
    * Get all block type mappings
    */
   getBlockPatterns() {
-    // Block patterns removed - starting fresh
-    return {};
     return { ...this.blockPatterns };
   }
 

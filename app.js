@@ -152,6 +152,7 @@ class MinecraftCAD {
     // Input controller
     this.inputController = new InputController(this.appStateManager, this.viewManager);
     this.inputController.connect(this.cameraController, this.toolManager);
+    this.inputController.connectToAppState();
     
     console.log('Input and tools initialized');
   }
@@ -199,6 +200,11 @@ class MinecraftCAD {
     // Set up event listeners for render requests
     this.appStateManager.on('renderRequested', () => {
       this.requestRender();
+    });
+
+    // Set up event listeners for immediate render requests (for panning)
+    this.appStateManager.on('immediateRender', () => {
+      this.immediateRender();
     });
     
     // Set up camera controller with initial viewport
@@ -362,22 +368,47 @@ class MinecraftCAD {
     }
     
     // Get current view and camera state
-    const currentView = this.appStateManager.currentView;
-    const currentLevel = this.appStateManager.currentLevel;
-    const cameraStates = this.cameraController.camera2D;
-    cameraStates['3d'] = this.cameraController.camera3D;
+    const currentView = this.appStateManager?.currentView || 'top';
+    const currentLevel = this.appStateManager?.currentLevel || 0;
+    const cameraStates = this.cameraController ? {
+      ...this.cameraController.camera2D,
+      '3d': this.cameraController.camera3D
+    } : {};
     
     // Render current view
     if (this.viewManager && this.blockDataManager) {
       this.viewManager.render(this.blockDataManager, cameraStates, currentLevel);
       
       // Render tool overlays
-      if (this.currentTool && this.currentTool.renderOverlay) {
-        const currentRenderer = this.viewManager.getCurrentRenderer();
-        if (currentRenderer) {
-          this.currentTool.renderOverlay(currentRenderer);
+      if (this.toolManager && this.toolManager.getCurrentTool()) {
+        const currentTool = this.toolManager.getCurrentTool();
+        if (currentTool && this.toolManager.getCurrentTool().renderOverlay) {
+          const currentRenderer = this.viewManager.getCurrentRenderer();
+          if (currentTool && currentRenderer) {
+            currentTool.renderOverlay(currentRenderer);
+          }
         }
       }
+    }
+  }
+
+  /**
+   * Immediate render method for responsive interactions (panning, etc.)
+   */
+  immediateRender() {
+    if (!this.isRunning) return;
+    
+    // Get current view and camera state
+    const currentView = this.appStateManager?.currentView || 'top';
+    const currentLevel = this.appStateManager?.currentLevel || 0;
+    const cameraStates = this.cameraController ? {
+      ...this.cameraController.camera2D,
+      '3d': this.cameraController.camera3D
+    } : {};
+    
+    // Render current view immediately
+    if (this.viewManager && this.blockDataManager) {
+      this.viewManager.render(this.blockDataManager, cameraStates, currentLevel);
     }
   }
 
@@ -403,32 +434,17 @@ class MinecraftCAD {
    * Tool management methods (ToolManager interface)
    */
   setActiveTool(toolName) {
-    const tool = this.tools.get(toolName);
-    
-    if (!tool) {
-      console.warn(`Tool '${toolName}' not found`);
-      return false;
+    if (this.toolManager) {
+      return this.toolManager.setCurrentTool(toolName);
     }
-    
-    // Deactivate current tool
-    if (this.currentTool) {
-      this.currentTool.deactivate();
-    }
-    
-    // Activate new tool
-    this.currentTool = tool;
-    this.currentTool.activate();
-    
-    // Update input controller
-    if (this.inputController) {
-      this.inputController.setCurrentTool(tool);
-    }
-    
-    return true;
+    return false;
   }
 
   getCurrentTool() {
-    return this.currentTool;
+    if (this.toolManager) {
+      return this.toolManager.getCurrentTool();
+    }
+    return null;
   }
 
   /**

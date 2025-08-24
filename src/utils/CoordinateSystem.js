@@ -92,6 +92,28 @@ export class CoordinateSystem {
   }
 
   /**
+   * Get center of grid cell containing world coordinates
+   */
+  getGridCellCenter(worldX, worldY) {
+    // Find which grid cell contains this world position
+    const gridX = Math.floor(worldX / this.blockSize);
+    const gridY = Math.floor(worldY / this.blockSize);
+    
+    // Calculate the center coordinates manually
+    const centerX = (gridX + 0.5) * this.blockSize;
+    const centerY = (gridY + 0.5) * this.blockSize;
+    
+    // Debug: show which grid cell we're finding
+    console.log(`getGridCellCenter: world(${worldX.toFixed(2)}, ${worldY.toFixed(2)}) -> grid(${gridX}, ${gridY}) -> center(${centerX}, ${centerY})`);
+    console.log(`  blockSize: ${this.blockSize}`);
+    console.log(`  gridX: ${gridX}, gridY: ${gridY}`);
+    console.log(`  centerX: ${centerX}, centerY: ${centerY}`);
+    
+    // Return the center of that grid cell
+    return { x: centerX, y: centerY };
+  }
+
+  /**
    * Draw grid lines on canvas
    */
   drawGrid(ctx, camera, viewportWidth, viewportHeight, options = {}) {
@@ -129,16 +151,20 @@ export class CoordinateSystem {
 
     // Vertical lines
     for (let x = startGridX; x <= endGridX; x++) {
-      const screenX = this.gridToScreen(x, 0, camera).x;
+      const screenX = this.worldToScreen(x * this.blockSize, 0, camera).x;
       ctx.moveTo(screenX, 0);
       ctx.lineTo(screenX, viewportHeight);
+      
+
     }
 
     // Horizontal lines
     for (let y = startGridY; y <= endGridY; y++) {
-      const screenY = this.gridToScreen(0, y, camera).y;
+      const screenY = this.worldToScreen(0, y * this.blockSize, camera).y;
       ctx.moveTo(0, screenY);
       ctx.lineTo(viewportWidth, screenY);
+      
+
     }
     
     ctx.stroke();
@@ -152,7 +178,7 @@ export class CoordinateSystem {
       // Major vertical lines
       const startMajorX = Math.floor(startGridX / majorGridInterval) * majorGridInterval;
       for (let x = startMajorX; x <= endGridX; x += majorGridInterval) {
-        const screenX = this.gridToScreen(x, 0, camera).x;
+        const screenX = this.worldToScreen(x * this.blockSize, 0, camera).x;
         ctx.moveTo(screenX, 0);
         ctx.lineTo(screenX, viewportHeight);
       }
@@ -160,7 +186,7 @@ export class CoordinateSystem {
       // Major horizontal lines
       const startMajorY = Math.floor(startGridY / majorGridInterval) * majorGridInterval;
       for (let y = startMajorY; y <= endGridY; y += majorGridInterval) {
-        const screenY = this.gridToScreen(0, y, camera).y;
+        const screenY = this.worldToScreen(0, y * this.blockSize, camera).y;
         ctx.moveTo(0, screenY);
         ctx.lineTo(viewportWidth, screenY);
       }
@@ -189,3 +215,4 @@ export class CoordinateSystem {
 
 // Create singleton instance
 export const coordinateSystem = new CoordinateSystem();
+

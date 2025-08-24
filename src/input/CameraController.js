@@ -71,8 +71,8 @@ export class CameraController {
         camera.offsetX = width / 2;
         camera.offsetY = height / 2;
         
-        // Set zoom to show 160x160 grid (80 units each way)
-        const desiredGridSize = 160;
+        // Start with much closer zoom - show only 20x20 grid (10 units each way)
+        const desiredGridSize = 20;
         const availableWidth = width * 0.9;
         const availableHeight = height * 0.9;
         const blockSize = 20;
@@ -80,7 +80,7 @@ export class CameraController {
         
         const zoomX = availableWidth / gridPixelSize;
         const zoomY = availableHeight / gridPixelSize;
-        camera.zoom = Math.min(zoomX, zoomY, 1.0);
+        camera.zoom = Math.min(zoomX, zoomY); // Remove the 1.0 cap to allow closer zoom
         
         console.log(`Initial camera setup for ${viewType}: zoom ${camera.zoom.toFixed(2)}`);
       });
@@ -110,11 +110,9 @@ export class CameraController {
   }
 
   /**
-   * Pan the camera (for 2D views) - DISABLED
+   * Pan the camera (for 2D views)
    */
   pan(deltaX, deltaY, viewType = null) {
-    // Panning disabled - do nothing
-    /*
     const view = viewType || this.currentView;
     
     if (view === '3d') {
@@ -125,6 +123,8 @@ export class CameraController {
     const camera = this.camera2D[view];
     if (!camera) return;
     
+    console.log(`Camera pan: view=${view}, deltaX=${deltaX}, deltaY=${deltaY}, oldOffset=(${camera.offsetX}, ${camera.offsetY})`);
+    
     // Apply pan with constraints
     const newOffsetX = camera.offsetX + deltaX;
     const newOffsetY = camera.offsetY + deltaY;
@@ -134,7 +134,8 @@ export class CameraController {
     
     camera.offsetX = Math.max(-maxOffset, Math.min(maxOffset, newOffsetX));
     camera.offsetY = Math.max(-maxOffset, Math.min(maxOffset, newOffsetY));
-    */
+    
+    console.log(`Camera pan result: newOffset=(${camera.offsetX}, ${camera.offsetY})`);
   }
 
   /**
@@ -214,8 +215,8 @@ export class CameraController {
         // Center the coordinate system: world (0,0) at screen center
         camera.offsetX = this.viewport.width / 2;
         camera.offsetY = this.viewport.height / 2;
-        // Set zoom to show approximately 80 units in each direction
-        const desiredGridSize = 160; // Total grid size (80 units each way)
+        // Set zoom to show approximately 10 units in each direction (much closer)
+        const desiredGridSize = 20; // Total grid size (10 units each way)
         const availableWidth = this.viewport.width * 0.9; // Use 90% of viewport
         const availableHeight = this.viewport.height * 0.9;
         const blockSize = 20; // Block size in pixels at zoom 1.0
@@ -224,7 +225,7 @@ export class CameraController {
         // Calculate zoom to fit the grid
         const zoomX = availableWidth / gridPixelSize;
         const zoomY = availableHeight / gridPixelSize;
-        camera.zoom = Math.min(zoomX, zoomY, 1.0); // Don't zoom in beyond 1.0
+        camera.zoom = Math.min(zoomX, zoomY); // Allow closer zoom for better detail
         
         console.log(`Camera reset: viewport ${this.viewport.width}x${this.viewport.height}, zoom ${camera.zoom.toFixed(2)}`);
       }

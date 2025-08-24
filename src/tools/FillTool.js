@@ -137,10 +137,8 @@ export class FillTool extends BaseTool {
    * Check if position is within valid bounds
    */
   isValidPosition(pos) {
-    // Check bounds (assuming 100x100x50 build area)
-    return pos.x >= 0 && pos.x < 100 &&
-           pos.y >= 0 && pos.y < 100 &&
-           pos.z >= 0 && pos.z < 50;
+    // Remove x,y restrictions, keep z limit for height
+    return pos.z >= 0 && pos.z < 50;
   }
 
   /**

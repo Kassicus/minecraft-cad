@@ -124,6 +124,30 @@ export class AppStateManager {
   }
 
   /**
+   * Get the current view mode
+   */
+  getCurrentView() {
+    return this.currentView;
+  }
+
+  /**
+   * Get camera state for a specific view
+   */
+  getCameraState(viewType) {
+    return this.cameraStates[viewType] || { offsetX: 0, offsetY: 0, zoom: 1.0 };
+  }
+
+  /**
+   * Update camera state for a specific view
+   */
+  updateCameraState(viewType, cameraState) {
+    if (this.cameraStates[viewType]) {
+      this.cameraStates[viewType] = { ...this.cameraStates[viewType], ...cameraState };
+      console.log(`Updated camera state for ${viewType} view:`, this.cameraStates[viewType]);
+    }
+  }
+
+  /**
    * Set the current height level
    */
   setCurrentLevel(level) {
@@ -414,6 +438,24 @@ export class AppStateManager {
       zoom: 'Zoom'
     };
     return names[tool] || tool;
+  }
+
+  /**
+   * Get current mouse position
+   */
+  getMousePosition() {
+    if (this.inputController && this.inputController.mouse) {
+      return { ...this.inputController.mouse };
+    }
+    return { x: 0, y: 0 };
+  }
+
+  /**
+   * Handle render requests
+   */
+  handleRenderRequest() {
+    // Emit event for immediate render
+    this.emit('immediateRender');
   }
 
   /**

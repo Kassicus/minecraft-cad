@@ -126,7 +126,7 @@ export class ToolManager {
    */
   onMouseDown(event, worldPos) {
     if (this.currentTool) {
-      this.currentTool.onMouseDown(event, worldPos);
+      this.currentTool.handleMouseDown(worldPos, event);
     }
   }
 
@@ -135,7 +135,7 @@ export class ToolManager {
    */
   onMouseMove(event, worldPos) {
     if (this.currentTool) {
-      this.currentTool.onMouseMove(event, worldPos);
+      this.currentTool.handleMouseMove(worldPos, event);
     }
   }
 
@@ -144,7 +144,7 @@ export class ToolManager {
    */
   onMouseUp(event, worldPos) {
     if (this.currentTool) {
-      this.currentTool.onMouseUp(event, worldPos);
+      this.currentTool.handleMouseUp(worldPos, event);
     }
   }
 

@@ -72,7 +72,12 @@ export class ElevationRenderer extends BaseRenderer {
    * Main render method
    */
   render(blockData, camera, level = 0) {
-    if (!this.context || !blockData) return;
+    if (!this.context || !blockData) {
+      console.warn(`ElevationRenderer: Cannot render - context: ${!!this.context}, blockData: ${!!blockData}`);
+      return;
+    }
+    
+    console.log(`ElevationRenderer: Starting render with ${blockData.getBlockCount ? blockData.getBlockCount() : 'unknown'} total blocks`);
     
     this.startPerformanceMeasurement();
     
@@ -93,6 +98,8 @@ export class ElevationRenderer extends BaseRenderer {
     // Get and sort blocks by depth
     const visibleBlocks = this.getVisibleBlocks(blockData, cullingBounds);
     const sortedBlocks = this.sortBlocksByDepth(visibleBlocks);
+    
+    console.log(`ElevationRenderer: Drawing ${sortedBlocks.length} sorted blocks`);
     
     // Draw blocks from back to front
     this.drawBlocks(sortedBlocks);
@@ -182,18 +189,25 @@ export class ElevationRenderer extends BaseRenderer {
   getVisibleBlocks(blockData, cullingBounds) {
     const blocks = [];
     
+    if (!blockData || !blockData.getBlocksAtLevel) {
+      console.warn('ElevationRenderer: blockData missing or invalid');
+      return blocks;
+    }
+    
     // Get all blocks and filter for visibility
     for (let level = 0; level < 50; level++) {
-      // Block rendering removed - starting fresh
-      const levelBlocks = [];
+      const levelBlocks = blockData.getBlocksAtLevel(level);
       
-      for (const block of levelBlocks) {
-        if (this.isBlockVisible(block, cullingBounds)) {
-          blocks.push(block);
+      if (levelBlocks && levelBlocks.length > 0) {
+        for (const block of levelBlocks) {
+          if (this.isBlockVisible(block, cullingBounds)) {
+            blocks.push(block);
+          }
         }
       }
     }
     
+    console.log(`ElevationRenderer: Found ${blocks.length} visible blocks out of ${blockData.getBlockCount()} total`);
     return blocks;
   }
 
@@ -232,9 +246,8 @@ export class ElevationRenderer extends BaseRenderer {
    */
   sortBlocksByDepth(blocks) {
     return blocks.sort((a, b) => {
-      // Block depth calculation removed
-      const depthA = 0;
-      const depthB = 0;
+      const depthA = this.getBlockDepth(a);
+      const depthB = this.getBlockDepth(b);
       return depthB - depthA; // Back to front
     });
   }
@@ -243,8 +256,6 @@ export class ElevationRenderer extends BaseRenderer {
    * Get the depth of a block for this elevation view
    */
   getBlockDepth(block) {
-    // Block depth calculation removed
-    return 0;
     switch (this.direction) {
       case 'north': return block.y; // Y is depth
       case 'south': return 100 - block.y; // Flipped Y
@@ -422,7 +433,8 @@ export class ElevationRenderer extends BaseRenderer {
    * Convert level to screen Y coordinate
    */
   levelToScreenY(level) {
-    const worldY = (49 - level) * this.settings.levelHeight;
+    // Level 0 (ground) should be at the bottom, level 49 at the top
+    const worldY = level * this.settings.levelHeight;
     return this.worldToScreen(0, worldY, 0).y;
   }
 
@@ -484,27 +496,27 @@ export class ElevationRenderer extends BaseRenderer {
       case 'north':
         gridX = Math.floor(world.x / this.settings.blockSize);
         gridY = 50; // Default depth
-        gridZ = 49 - Math.floor(world.y / this.settings.levelHeight);
+        gridZ = Math.floor(world.y / this.settings.levelHeight);
         break;
       case 'south':
         gridX = 99 - Math.floor(world.x / this.settings.blockSize);
         gridY = 50;
-        gridZ = 49 - Math.floor(world.y / this.settings.levelHeight);
+        gridZ = Math.floor(world.y / this.settings.levelHeight);
         break;
       case 'east':
         gridX = 50;
         gridY = Math.floor(world.x / this.settings.blockSize);
-        gridZ = 49 - Math.floor(world.y / this.settings.levelHeight);
+        gridZ = Math.floor(world.y / this.settings.levelHeight);
         break;
       case 'west':
         gridX = 50;
         gridY = 99 - Math.floor(world.x / this.settings.blockSize);
-        gridZ = 49 - Math.floor(world.y / this.settings.levelHeight);
+        gridZ = Math.floor(world.y / this.settings.levelHeight);
         break;
       default:
         gridX = Math.floor(world.x / this.settings.blockSize);
         gridY = 50;
-        gridZ = 49 - Math.floor(world.y / this.settings.levelHeight);
+        gridZ = Math.floor(world.y / this.settings.levelHeight);
     }
     
     return { x: gridX, y: gridY, z: gridZ };
@@ -527,6 +539,135 @@ export class ElevationRenderer extends BaseRenderer {
   }
 
   /**
+   * Reset view to show entire build from this elevation angle
+   */
+  resetView(blockData) {
+    if (!blockData) return;
+    
+    const bounds = blockData.getBounds();
+    
+    // Check if we have any blocks
+    if (bounds.minX === bounds.maxX && bounds.minY === bounds.maxY && bounds.minZ === bounds.maxZ) {
+      // No blocks or single block - center view with closer zoom
+      this.camera.offsetX = this.viewportBounds.width / 2;
+      this.camera.offsetY = this.viewportBounds.height / 2;
+      this.camera.zoom = 2.0; // Start with closer zoom for better detail
+      return;
+    }
+    
+    // Calculate dimensions based on elevation direction
+    let buildWidth, buildHeight;
+    
+    switch (this.direction) {
+      case 'north':
+      case 'south':
+        // X axis (width) and Z axis (height) are visible
+        buildWidth = (bounds.maxX - bounds.minX + 1) * this.settings.blockSize;
+        buildHeight = (bounds.maxZ - bounds.minZ + 1) * this.settings.levelHeight;
+        break;
+      case 'east':
+      case 'west':
+        // Y axis (width) and Z axis (height) are visible
+        buildWidth = (bounds.maxY - bounds.minY + 1) * this.settings.blockSize;
+        buildHeight = (bounds.maxZ - bounds.minZ + 1) * this.settings.levelHeight;
+        break;
+      default:
+        buildWidth = (bounds.maxX - bounds.minX + 1) * this.settings.blockSize;
+        buildHeight = (bounds.maxZ - bounds.minZ + 1) * this.settings.levelHeight;
+    }
+    
+    // Calculate zoom to fit all blocks with some margin
+    const scaleX = (this.viewportBounds.width * 0.8) / buildWidth;
+    const scaleY = (this.viewportBounds.height * 0.8) / buildHeight;
+    
+    // Start with closer zoom for better detail view
+    this.camera.zoom = Math.min(scaleX, scaleY, 2.0);
+    
+    // Calculate center position based on elevation direction
+    let centerX, centerY;
+    
+    switch (this.direction) {
+      case 'north':
+        centerX = (bounds.minX + bounds.maxX) * this.settings.blockSize / 2;
+        centerY = (bounds.minZ + bounds.maxZ) * this.settings.levelHeight / 2;
+        break;
+      case 'south':
+        centerX = (bounds.minX + bounds.maxX) * this.settings.blockSize / 2;
+        centerY = (bounds.minZ + bounds.maxZ) * this.settings.levelHeight / 2;
+        break;
+      case 'east':
+        centerX = (bounds.minY + bounds.maxY) * this.settings.blockSize / 2;
+        centerY = (bounds.minZ + bounds.maxZ) * this.settings.levelHeight / 2;
+        break;
+      case 'west':
+        centerX = (bounds.minY + bounds.maxY) * this.settings.blockSize / 2;
+        centerY = (bounds.minZ + bounds.maxZ) * this.settings.levelHeight / 2;
+        break;
+      default:
+        centerX = (bounds.minX + bounds.maxX) * this.settings.blockSize / 2;
+        centerY = (bounds.minZ + bounds.maxZ) * this.settings.levelHeight / 2;
+    }
+    
+    // Center the view horizontally and position ground level at bottom
+    this.camera.offsetX = this.viewportBounds.width / 2 - centerX * this.camera.zoom;
+    // Position so that level 0 (ground) is at the bottom, level 49 at the top
+    this.camera.offsetY = this.viewportBounds.height - (bounds.maxZ * this.settings.levelHeight * this.camera.zoom);
+    
+    console.log(`${this.direction} elevation view reset: build(${buildWidth.toFixed(1)}x${buildHeight.toFixed(1)}), zoom(${this.camera.zoom.toFixed(2)}), center(${centerX.toFixed(1)}, ${centerY.toFixed(1)})`);
+  }
+
+  /**
+   * Pan the elevation view
+   */
+  pan(deltaX, deltaY) {
+    this.camera.offsetX += deltaX;
+    this.camera.offsetY += deltaY;
+    
+    // Update camera state in app state manager
+    if (this.appStateManager) {
+      this.appStateManager.updateCameraState(this.direction, this.camera);
+    }
+    
+    // Force a re-render to show the updated view
+    this.forceUpdate();
+  }
+
+  /**
+   * Zoom the elevation view
+   */
+  zoom(factor, centerX, centerY) {
+    const oldZoom = this.camera.zoom;
+    const newZoom = Math.max(0.1, Math.min(10.0, oldZoom * factor));
+    
+    if (newZoom !== oldZoom) {
+      // Zoom towards the specified point
+      const worldPoint = this.screenToWorld(centerX, centerY);
+      
+      this.camera.zoom = newZoom;
+      
+      const newScreenPoint = this.worldToScreen(worldPoint.x, worldPoint.y);
+      this.camera.offsetX += centerX - newScreenPoint.x;
+      this.camera.offsetY += centerY - newScreenPoint.y;
+      
+      // Update camera state in app state manager
+      if (this.appStateManager) {
+        this.appStateManager.updateCameraState(this.direction, this.camera);
+      }
+      
+      // Force a re-render to show the updated view
+      this.forceUpdate();
+    }
+  }
+
+  /**
+   * Connect to app state manager
+   */
+  connect(appStateManager) {
+    this.appStateManager = appStateManager;
+    console.log(`${this.direction} elevation renderer connected to app state manager`);
+  }
+
+  /**
    * Update settings
    */
   updateSettings(newSettings) {
@@ -544,6 +685,17 @@ export class ElevationRenderer extends BaseRenderer {
     if (this.transforms[direction]) {
       this.direction = direction;
       this.transform = this.transforms[direction];
+    }
+  }
+
+  /**
+   * Force a re-render of the current view
+   */
+  forceUpdate() {
+    if (this.appStateManager && this.appStateManager.blockDataManager) {
+      const blockData = this.appStateManager.blockDataManager;
+      const cameraState = this.appStateManager.getCameraState(this.direction);
+      this.render(blockData, cameraState, this.appStateManager.currentLevel);
     }
   }
 

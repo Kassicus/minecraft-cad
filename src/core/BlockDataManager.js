@@ -41,9 +41,9 @@ export class BlockDataManager {
    * Set a block at the specified coordinates
    */
   setBlock(x, y, z, blockType = 'blockA', layer = 'default') {
-    // Validate coordinates (100x100x50 as per architecture)
+    // Validate coordinates (unlimited x,y, 50 block height limit)
     if (!this.isValidCoordinate(x, y, z)) {
-      console.warn(`Invalid coordinates: ${x}, ${y}, ${z}`);
+      console.warn(`BlockDataManager: Invalid coordinates (${x}, ${y}, ${z})`);
       return false;
     }
 
@@ -69,6 +69,8 @@ export class BlockDataManager {
       // Update statistics
       this.stats.blocksByType[oldType]--;
       this.stats.blocksByType[blockType] = (this.stats.blocksByType[blockType] || 0) + 1;
+      
+      console.log(`BlockDataManager: Updated block at (${x}, ${y}, ${z}) to type ${blockType}`);
     } else {
       // Create new block
       const block = {
@@ -86,6 +88,8 @@ export class BlockDataManager {
       this.stats.totalBlocks++;
       this.stats.blocksByType[blockType] = (this.stats.blocksByType[blockType] || 0) + 1;
       this.stats.blocksByLevel[z] = (this.stats.blocksByLevel[z] || 0) + 1;
+      
+      console.log(`BlockDataManager: Added block at (${x}, ${y}, ${z}) type ${blockType}. Total blocks: ${this.stats.totalBlocks}`);
     }
     
     return true;
@@ -128,11 +132,13 @@ export class BlockDataManager {
    */
   getBlocksAtLevel(level) {
     const blocks = [];
+    
     for (const block of this.blocks.values()) {
       if (block.z === level) {
         blocks.push(block);
       }
     }
+    
     return blocks;
   }
 
@@ -160,10 +166,11 @@ export class BlockDataManager {
   }
 
   /**
-   * Check if coordinates are valid (100x100x50 build size)
+   * Check if coordinates are valid (unlimited x,y, 50 block height limit)
    */
   isValidCoordinate(x, y, z) {
-    return x >= 0 && x < 100 && y >= 0 && y < 100 && z >= 0 && z < 50;
+    // Remove x,y restrictions, keep z limit for height
+    return z >= 0 && z < 50;
   }
 
   /**
@@ -191,6 +198,36 @@ export class BlockDataManager {
    */
   getStats() {
     return { ...this.stats };
+  }
+
+  /**
+   * Get total block count
+   */
+  getBlockCount() {
+    return this.stats.totalBlocks;
+  }
+
+  /**
+   * Get bounds of all placed blocks
+   */
+  getBounds() {
+    if (this.stats.totalBlocks === 0) {
+      return { minX: 0, minY: 0, minZ: 0, maxX: 0, maxY: 0, maxZ: 0 };
+    }
+    
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    
+    for (const block of this.blocks.values()) {
+      minX = Math.min(minX, block.x);
+      minY = Math.min(minY, block.y);
+      minZ = Math.min(minZ, block.z);
+      maxX = Math.max(maxX, block.x);
+      maxY = Math.max(maxY, block.y);
+      maxZ = Math.max(maxZ, block.z);
+    }
+    
+    return { minX, minY, minZ, maxX, maxY, maxZ };
   }
 
   /**
@@ -284,3 +321,4 @@ export class BlockDataManager {
     }
   }
 }
+
