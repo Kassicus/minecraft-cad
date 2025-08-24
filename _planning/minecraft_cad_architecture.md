@@ -1,422 +1,761 @@
-# MinecraftCAD - Technical Architecture
+### 5. Input System
+
+#### 5.1 Input Handler (`InputHandler`)
+Handles all mouse, keyboard, and input events.
+
+**File**: `src/input/InputHandler.lua`
+```lua
+local InputHandler = {}
+InputHandler.__index = InputHandler
+
+function InputHandler:new(appState, viewManager, toolManager)
+    local self = setmetatable({}, InputHandler)
+    self.appState = appState
+    self.viewManager = viewManager
+    self.toolManager = toolManager
+    
+    self.mouseX = 0
+    self.mouseY = 0
+    self.mousePressed = false
+    
+    return self
+end
+
+function InputHandler:mousepressed(x, y, button)
+    self.mouseX, self.mouseY = x, y
+    self.mousePressed = true
+    
+    -- Convert screen coordinates to world coordinates
+    local currentRenderer = self.viewManager:getCurrentRenderer()
+    local worldX, worldY = currentRenderer:screenToWorld(x, y)
+    
+    -- Pass to current tool
+    local currentTool = self.toolManager:getCurrentTool()
+    if currentTool then
+        currentTool:onMousePressed(worldX, worldY, button)
+    end
+end
+
+function InputHandler:mousereleased(x, y, button)
+    self.mousePressed = false
+    
+    local currentRenderer = self.viewManager:getCurrentRenderer()
+    local worldX, worldY = currentRenderer:screenToWorld(x, y)
+    
+    local currentTool = self.toolManager:getCurrentTool()
+    if currentTool then
+        currentTool:onMouseReleased(worldX, worldY, button)
+    end
+end
+
+function InputHandler:mousemoved(x, y)
+    local dx, dy = x - self.mouseX, y - self.mouseY
+    self.mouseX, self.mouseY = x, y
+    
+    -- Handle camera panning when middle mouse is held
+    if love.mouse.isDown(3) then -- Middle mouse button
+        local currentRenderer = self.viewManager:getCurrentRenderer()
+        currentRenderer.camera.x = currentRenderer.camera.x - dx / currentRenderer.camera.zoom
+        currentRenderer.camera.y = currentRenderer.camera.y - dy / currentRenderer.camera.zoom
+    end
+    
+    -- Pass to current tool
+    local currentRenderer = self.viewManager:getCurrentRenderer()
+    local worldX, worldY = currentRenderer:screenToWorld(x, y)
+    
+    local currentTool = self.toolManager:getCurrentTool()
+    if currentTool then
+        currentTool:onMouseMoved(worldX, worldY)
+    end
+end
+
+function InputHandler:wheelmoved(x, y)
+    -- Handle zoom
+    local currentRenderer = self.viewManager:getCurrentRenderer()
+    local zoomFactor = 1.1
+    
+    if y > 0 then
+        currentRenderer.camera.zoom = currentRenderer.camera.zoom * zoomFactor
+    elseif y < 0 then
+        currentRenderer.camera.zoom = currentRenderer.camera.zoom / zoomFactor
+    end
+    
+    -- Clamp zoom levels
+    currentRenderer.camera.zoom = math.max(0.1, math.min(5.0, currentRenderer.camera.zoom))
+end
+
+function InputHandler:keypressed(key)
+    -- Handle keyboard shortcuts
+    if key == 'escape' then
+        love.event.quit()
+    elseif key == '1' then
+        self.appState:setCurrentView('top')
+    elseif key == '2' then
+        self.appState:setCurrentView('isometric')
+    elseif key == '3' then
+        self.appState:setCurrentView('elevation')
+    elseif key == 'space' then
+        self.toolManager:setCurrentTool('place')
+    elseif key == 'e' then
+        self.toolManager:setCurrentTool('erase')
+    elseif key == 'up' then
+        self.appState:setCurrentLevel(self.appState.currentLevel + 1)
+    elseif key == 'down' then
+        self.appState:setCurrentLevel(self.appState.currentLevel - 1)
+    end
+end
+
+return InputHandler# MinecraftCAD - Technical Architecture (Love2D/Lua)
 
 ## System Overview
 
-The application follows a modular architecture with clear separation between data management, rendering systems, and user interface. The core principle is maintaining a single source of truth for the 3D block data while providing multiple view renderers that present this data differently.
+The application follows a modular architecture with clear separation between data management, rendering systems, and user interface. Built with Love2D (LÖVE) framework and Lua, providing excellent 2D rendering performance and simple cross-platform deployment.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   User Input    │───▶│   Application    │───▶│   Rendering     │
-│   Controller    │    │   State Manager  │    │   Pipeline      │
+│   Input         │───▶│   Application    │───▶│   Rendering     │
+│   Handler       │    │   State Manager  │    │   Pipeline      │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                       │                       │
          │                       ▼                       ▼
          │              ┌──────────────────┐    ┌─────────────────┐
          │              │   Block Data     │    │   View          │
-         └─────────────▶│   Manager        │    │   Controllers   │
+         └─────────────▶│   Manager        │    │   Renderers     │
                         └──────────────────┘    └─────────────────┘
 ```
 
+## Technology Stack
+
+### Core Technologies
+- **Love2D (LÖVE 11.4+)**: Game framework providing graphics, input, and windowing
+- **Lua 5.1+**: Lightweight scripting language with excellent performance
+- **Native 2D Graphics**: Love2D's built-in graphics API for all rendering
+- **Cross-Platform**: Windows, macOS, Linux support out of the box
+
+### Key Advantages of Love2D
+- **Immediate Mode Graphics**: Perfect for CAD-style applications
+- **High Performance 2D**: Optimized for thousands of draw calls
+- **Simple Deployment**: Single executable distribution
+- **Excellent Debugging**: Built-in console and error handling
+- **Lightweight**: ~10MB runtime, fast startup times
+
+### 3D Visualization Strategy
+- **Isometric Projection**: 2D rendering of 3D perspective
+- **Layered Rendering**: Z-sorting for proper depth display
+- **Efficient 2D Operations**: Much faster than WebGL for our use case
+
 ## Core Modules
 
-### 1. Application State Manager (`AppStateManager`)
+### 1. Application State Manager (`AppState`)
 Central coordinator that manages application state, view switching, and cross-module communication.
 
-**Responsibilities:**
-- Current view mode (top/3d/elevation)
-- Current height level (0-49)
-- Active tool selection
-- UI state management
-- Event coordination between modules
+**File**: `src/core/AppState.lua`
+```lua
+local AppState = {}
+AppState.__index = AppState
 
-**Key Methods:**
-```javascript
-class AppStateManager {
-  setCurrentView(viewType)
-  setCurrentLevel(level)
-  setActiveTool(toolType)
-  notifyViewChange(viewType, level)
-  getState()
-}
+function AppState:new()
+    local self = setmetatable({}, AppState)
+    self.currentView = 'top'
+    self.currentLevel = 0 -- Ground level (0-49)
+    self.activeTool = 'place'
+    self.selectedBlockType = 'blockA'
+    self.camera = {x = 0, y = 0, zoom = 1.0}
+    self.listeners = {}
+    return self
+end
+
+function AppState:setCurrentView(viewType)
+    self.currentView = viewType
+    self:notifyListeners('viewChanged', viewType)
+end
+
+function AppState:setCurrentLevel(level)
+    if level >= 0 and level <= 49 then
+        self.currentLevel = level
+        self:notifyListeners('levelChanged', level)
+    end
+end
+
+return AppState
 ```
 
-### 2. Block Data Manager (`BlockDataManager`)
+### 2. Block Data Manager (`BlockData`)
 Manages the core 3D block dataset with optimized storage and fast lookups.
 
-**Data Structure:**
-```javascript
-class BlockDataManager {
-  // Primary storage: 3D sparse array for fast coordinate lookup
-  blocks = new Map() // key: "x,y,z", value: BlockData
-  
-  // Spatial indexing for performance
-  octree = new Octree(100, 100, 50)
-  
-  // Change tracking for undo/redo
-  history = new HistoryManager()
-}
+**File**: `src/core/BlockData.lua`
+```lua
+local BlockData = {}
+BlockData.__index = BlockData
+
+function BlockData:new()
+    local self = setmetatable({}, BlockData)
+    self.blocks = {} -- Sparse 3D array: [x][y][z] = blockType
+    self.blockCount = 0
+    self.bounds = {minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0}
+    return self
+end
+
+function BlockData:setBlock(x, y, z, blockType)
+    -- Initialize nested tables if needed
+    if not self.blocks[x] then self.blocks[x] = {} end
+    if not self.blocks[x][y] then self.blocks[x][y] = {} end
+    
+    -- Set block and update count
+    local wasEmpty = (self.blocks[x][y][z] == nil)
+    self.blocks[x][y][z] = blockType
+    
+    if wasEmpty and blockType then
+        self.blockCount = self.blockCount + 1
+    elseif not wasEmpty and not blockType then
+        self.blockCount = self.blockCount - 1
+    end
+    
+    self:updateBounds(x, y, z)
+end
+
+function BlockData:getBlock(x, y, z)
+    return self.blocks[x] and self.blocks[x][y] and self.blocks[x][y][z]
+end
+
+function BlockData:getBlocksAtLevel(level)
+    local blocks = {}
+    for x, xTable in pairs(self.blocks) do
+        for y, yTable in pairs(xTable) do
+            if yTable[level] then
+                table.insert(blocks, {x = x, y = y, z = level, type = yTable[level]})
+            end
+        end
+    end
+    return blocks
+end
+
+return BlockData
 ```
 
-**Optimization Strategies:**
-- **Sparse Array**: Only store occupied blocks, not empty space
-- **Octree Spatial Indexing**: For efficient range queries and frustum culling
-- **Dirty Region Tracking**: Only re-render changed areas
-- **Batch Operations**: Group multiple block changes for performance
-
-**Key Methods:**
-```javascript
-setBlock(x, y, z, blockType)
-getBlock(x, y, z)
-getBlocksInRange(x1, y1, z1, x2, y2, z2)
-getBlocksAtLevel(level)
-clearLevel(level)
-getBounds()
-```
-
-### 3. Rendering Pipeline
+### 3. Rendering System
 
 #### 3.1 Base Renderer (`BaseRenderer`)
 Abstract base class for all view renderers.
 
-```javascript
-class BaseRenderer {
-  canvas = null
-  context = null
-  viewportBounds = {x, y, width, height}
-  
-  abstract render(blockData, camera, viewport)
-  abstract handleResize(width, height)
-  abstract worldToScreen(x, y, z)
-  abstract screenToWorld(screenX, screenY)
-}
+**File**: `src/rendering/BaseRenderer.lua`
+```lua
+local BaseRenderer = {}
+BaseRenderer.__index = BaseRenderer
+
+function BaseRenderer:new()
+    local self = setmetatable({}, BaseRenderer)
+    self.viewport = {x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getHeight()}
+    self.camera = {x = 0, y = 0, zoom = 1.0}
+    return self
+end
+
+function BaseRenderer:render(blockData, appState)
+    -- Override in subclasses
+    error("BaseRenderer:render() must be overridden")
+end
+
+function BaseRenderer:worldToScreen(worldX, worldY)
+    local screenX = (worldX - self.camera.x) * self.camera.zoom + self.viewport.width / 2
+    local screenY = (worldY - self.camera.y) * self.camera.zoom + self.viewport.height / 2
+    return screenX, screenY
+end
+
+function BaseRenderer:screenToWorld(screenX, screenY)
+    local worldX = (screenX - self.viewport.width / 2) / self.camera.zoom + self.camera.x
+    local worldY = (screenY - self.viewport.height / 2) / self.camera.zoom + self.camera.y
+    return worldX, worldY
+end
+
+return BaseRenderer
 ```
 
 #### 3.2 Top View Renderer (`TopViewRenderer`)
-2D Canvas-based renderer for top-down plan views.
+2D renderer for top-down plan views with hatch patterns.
 
-**Features:**
-- Grid system with configurable spacing
-- Height level filtering
-- Hatch pattern rendering
-- Ghost block display for other levels
-- Efficient 2D drawing with viewport culling
+**File**: `src/rendering/TopViewRenderer.lua`
+```lua
+local BaseRenderer = require('src.rendering.BaseRenderer')
+local HatchPatterns = require('src.rendering.HatchPatterns')
 
-**Implementation:**
-```javascript
-class TopViewRenderer extends BaseRenderer {
-  constructor(canvas) {
-    this.canvas = canvas
-    this.ctx = canvas.getContext('2d')
-    this.hatchPatterns = new HatchPatternManager()
-  }
-  
-  render(blockData, camera, level) {
-    this.clearCanvas()
-    this.drawGrid()
-    this.drawBlocksAtLevel(blockData, level)
-    this.drawGhostBlocks(blockData, level)
-  }
-}
+local TopViewRenderer = setmetatable({}, BaseRenderer)
+TopViewRenderer.__index = TopViewRenderer
+
+function TopViewRenderer:new()
+    local self = setmetatable(BaseRenderer:new(), TopViewRenderer)
+    self.gridSize = 20 -- pixels per block
+    self.hatchPatterns = HatchPatterns:new()
+    return self
+end
+
+function TopViewRenderer:render(blockData, appState)
+    love.graphics.push()
+    love.graphics.translate(self.viewport.width / 2, self.viewport.height / 2)
+    love.graphics.scale(self.camera.zoom)
+    love.graphics.translate(-self.camera.x, -self.camera.y)
+    
+    self:drawGrid()
+    self:drawBlocksAtLevel(blockData, appState.currentLevel)
+    self:drawGhostBlocks(blockData, appState.currentLevel)
+    
+    love.graphics.pop()
+end
+
+function TopViewRenderer:drawGrid()
+    love.graphics.setColor(0.4, 0.7, 0.96, 0.3) -- Blueprint blue, transparent
+    love.graphics.setLineWidth(1)
+    
+    local gridExtent = 50 * self.gridSize
+    for i = -gridExtent, gridExtent, self.gridSize do
+        love.graphics.line(-gridExtent, i, gridExtent, i) -- Horizontal lines
+        love.graphics.line(i, -gridExtent, i, gridExtent) -- Vertical lines
+    end
+end
+
+function TopViewRenderer:drawBlocksAtLevel(blockData, level)
+    local blocks = blockData:getBlocksAtLevel(level)
+    for _, block in ipairs(blocks) do
+        self:drawBlock(block.x, block.y, block.type, 1.0) -- Full opacity
+    end
+end
+
+function TopViewRenderer:drawGhostBlocks(blockData, currentLevel)
+    -- Draw blocks from other levels with transparency
+    for level = 0, 49 do
+        if level ~= currentLevel then
+            local blocks = blockData:getBlocksAtLevel(level)
+            for _, block in ipairs(blocks) do
+                self:drawBlock(block.x, block.y, block.type, 0.3) -- Low opacity
+            end
+        end
+    end
+end
+
+function TopViewRenderer:drawBlock(x, y, blockType, opacity)
+    local screenX = x * self.gridSize
+    local screenY = y * self.gridSize
+    
+    -- Draw block with hatch pattern
+    self.hatchPatterns:drawPattern(blockType, screenX, screenY, self.gridSize, self.gridSize, opacity)
+    
+    -- Draw border
+    love.graphics.setColor(0.4, 0.7, 0.96, opacity) -- Blueprint blue border
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle('line', screenX, screenY, self.gridSize, self.gridSize)
+end
+
+return TopViewRenderer
 ```
 
-#### 3.3 3D Renderer (`ThreeDRenderer`)
-WebGL-based renderer using Three.js for 3D visualization.
+### 4. Hatch Pattern System (`HatchPatterns`)
 
-**Features:**
-- Instanced rendering for performance
-- Basic lighting (ambient + directional)
-- Hatch pattern textures
-- Orbit controls
-- Frustum culling
+**File**: `src/rendering/HatchPatterns.lua`
+```lua
+local HatchPatterns = {}
+HatchPatterns.__index = HatchPatterns
 
-**Implementation:**
-```javascript
-class ThreeDRenderer extends BaseRenderer {
-  constructor(canvas) {
-    this.scene = new THREE.Scene()
-    this.camera = new THREE.PerspectiveCamera(75, width/height, 0.1, 1000)
-    this.renderer = new THREE.WebGLRenderer({canvas})
-    this.controls = new THREE.OrbitControls(this.camera, canvas)
-    this.instancedMesh = new THREE.InstancedMesh(geometry, material, maxInstances)
-  }
-  
-  render(blockData) {
-    this.updateInstances(blockData)
-    this.renderer.render(this.scene, this.camera)
-  }
-}
-```
-
-#### 3.4 Elevation Renderer (`ElevationRenderer`)
-2D Canvas renderer for elevation views (North, South, East, West).
-
-**Features:**
-- Orthographic projection
-- External face visibility calculation
-- Depth-based sorting
-- Hatch pattern application
-
-### 4. Hatch Pattern System (`HatchPatternManager`)
-
-**Pattern Definitions:**
-```javascript
-const HATCH_PATTERNS = {
-  solid: { type: 'fill', color: '#333' },
-  diagonal: { type: 'lines', angle: 45, spacing: 4 },
-  crosshatch: { type: 'lines', angle: [45, 135], spacing: 4 },
-  dots: { type: 'dots', size: 2, spacing: 8 },
-  brick: { type: 'custom', pattern: 'brick' }
-}
-
-const BLOCK_TYPES = {
-  blockA: { name: 'Block A', hatchPattern: 'solid', color: '#666' },
-  blockB: { name: 'Block B', hatchPattern: 'diagonal', color: '#888' },
-  blockC: { name: 'Block C', hatchPattern: 'crosshatch', color: '#444' },
-  blockD: { name: 'Block D', hatchPattern: 'dots', color: '#555' },
-  blockE: { name: 'Block E', hatchPattern: 'brick', color: '#777' }
-}
-```
-
-**2D Implementation (Canvas):**
-```javascript
-class HatchPatternManager {
-  createPattern(patternType, color) {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    // Generate pattern based on type
-    return ctx.createPattern(canvas, 'repeat')
-  }
-}
-```
-
-**3D Implementation (Three.js):**
-```javascript
-class HatchTextureManager {
-  createTexture(patternType, color) {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    // Generate pattern - simplified for 3D performance
-    // Hatch patterns render as solid colors with subtle variations
-    return new THREE.CanvasTexture(canvas)
-  }
-  
-  // For performance, 3D view uses solid colors based on hatch pattern
-  getSolidColorForPattern(patternType) {
-    const patternColors = {
-      solid: '#666',
-      diagonal: '#888', 
-      crosshatch: '#444',
-      dots: '#555',
-      brick: '#777'
+function HatchPatterns:new()
+    local self = setmetatable({}, HatchPatterns)
+    
+    -- Block type definitions with colors and patterns
+    self.blockTypes = {
+        blockA = { color = {0.4, 0.4, 0.4}, pattern = 'solid' },
+        blockB = { color = {0.5, 0.5, 0.5}, pattern = 'diagonal' },
+        blockC = { color = {0.3, 0.3, 0.3}, pattern = 'crosshatch' },
+        blockD = { color = {0.35, 0.35, 0.35}, pattern = 'dots' },
+        blockE = { color = {0.45, 0.45, 0.45}, pattern = 'brick' }
     }
-    return patternColors[patternType] || '#666'
-  }
-}
+    
+    return self
+end
+
+function HatchPatterns:drawPattern(blockType, x, y, width, height, opacity)
+    local blockDef = self.blockTypes[blockType]
+    if not blockDef then return end
+    
+    local r, g, b = unpack(blockDef.color)
+    love.graphics.setColor(r, g, b, opacity)
+    
+    -- Draw base fill
+    love.graphics.rectangle('fill', x, y, width, height)
+    
+    -- Draw pattern overlay
+    if blockDef.pattern == 'solid' then
+        -- No additional pattern needed
+    elseif blockDef.pattern == 'diagonal' then
+        self:drawDiagonalLines(x, y, width, height, opacity)
+    elseif blockDef.pattern == 'crosshatch' then
+        self:drawCrosshatch(x, y, width, height, opacity)
+    elseif blockDef.pattern == 'dots' then
+        self:drawDots(x, y, width, height, opacity)
+    elseif blockDef.pattern == 'brick' then
+        self:drawBrickPattern(x, y, width, height, opacity)
+    end
+end
+
+function HatchPatterns:drawDiagonalLines(x, y, width, height, opacity)
+    love.graphics.setColor(0.8, 0.8, 0.8, opacity * 0.7)
+    love.graphics.setLineWidth(1)
+    
+    local spacing = 4
+    for i = 0, width + height, spacing do
+        love.graphics.line(x + i, y, x + i - height, y + height)
+    end
+end
+
+function HatchPatterns:drawCrosshatch(x, y, width, height, opacity)
+    love.graphics.setColor(0.7, 0.7, 0.7, opacity * 0.6)
+    love.graphics.setLineWidth(1)
+    
+    local spacing = 4
+    -- Diagonal lines one way
+    for i = 0, width + height, spacing do
+        love.graphics.line(x + i, y, x + i - height, y + height)
+    end
+    -- Diagonal lines the other way
+    for i = 0, width + height, spacing do
+        love.graphics.line(x - i, y, x - i + height, y + height)
+    end
+end
+
+function HatchPatterns:drawDots(x, y, width, height, opacity)
+    love.graphics.setColor(0.6, 0.6, 0.6, opacity * 0.8)
+    
+    local spacing = 6
+    local radius = 1
+    for dx = spacing / 2, width, spacing do
+        for dy = spacing / 2, height, spacing do
+            love.graphics.circle('fill', x + dx, y + dy, radius)
+        end
+    end
+end
+
+function HatchPatterns:drawBrickPattern(x, y, width, height, opacity)
+    love.graphics.setColor(0.9, 0.9, 0.9, opacity * 0.5)
+    love.graphics.setLineWidth(1)
+    
+    local brickHeight = 6
+    local brickWidth = 12
+    
+    for row = 0, height, brickHeight do
+        local offset = (row / brickHeight % 2 == 0) and 0 or brickWidth / 2
+        for col = -brickWidth, width + brickWidth, brickWidth do
+            love.graphics.rectangle('line', x + col + offset, y + row, brickWidth, brickHeight)
+        end
+    end
+end
+
+return HatchPatterns
 ```
 
-### 5. Camera and Viewport System
+### 6. Tool System
 
-#### 5.1 Camera Controller (`CameraController`)
-Unified camera system that works across all views.
+#### 6.1 Base Tool (`BaseTool`)
+**File**: `src/tools/BaseTool.lua`
+```lua
+local BaseTool = {}
+BaseTool.__index = BaseTool
 
-```javascript
-class CameraController {
-  // 2D camera (top/elevation views)
-  position2D = {x: 0, y: 0}
-  zoom2D = 1.0
-  
-  // 3D camera (Three.js camera)
-  camera3D = null
-  
-  // Viewport management
-  viewport = {x: 0, y: 0, width: 800, height: 600}
-  
-  pan(deltaX, deltaY, viewType)
-  zoom(delta, viewType)
-  resetView(viewType)
-  syncViews() // Synchronize cursor positions across views
-}
+function BaseTool:new(name, blockData, appState)
+    local self = setmetatable({}, BaseTool)
+    self.name = name
+    self.blockData = blockData
+    self.appState = appState
+    return self
+end
+
+function BaseTool:onMousePressed(worldX, worldY, button)
+    -- Override in subclasses
+end
+
+function BaseTool:onMouseReleased(worldX, worldY, button)
+    -- Override in subclasses
+end
+
+function BaseTool:onMouseMoved(worldX, worldY)
+    -- Override in subclasses
+end
+
+return BaseTool
 ```
 
-### 6. Input Management System
+#### 6.2 Block Placement Tool (`PlaceTool`)
+**File**: `src/tools/PlaceTool.lua`
+```lua
+local BaseTool = require('src.tools.BaseTool')
 
-#### 6.1 Input Controller (`InputController`)
-Handles all mouse, keyboard, and touch input with proper event delegation.
+local PlaceTool = setmetatable({}, BaseTool)
+PlaceTool.__index = PlaceTool
 
-**Features:**
-- Tool-specific input handling
-- Cross-view coordinate translation
-- Gesture recognition (pan, zoom, orbit)
-- Keyboard shortcuts
+function PlaceTool:new(blockData, appState)
+    local self = setmetatable(BaseTool:new('place', blockData, appState), PlaceTool)
+    return self
+end
 
-**Implementation:**
-```javascript
-class InputController {
-  constructor(appState, renderers) {
-    this.appState = appState
-    this.renderers = new Map() // viewType -> renderer
-    this.currentTool = null
-    this.setupEventListeners()
-  }
-  
-  handleMouseDown(event) {
-    const worldPos = this.screenToWorld(event.clientX, event.clientY)
-    this.currentTool.onMouseDown(worldPos)
-  }
-}
+function PlaceTool:onMousePressed(worldX, worldY, button)
+    if button == 1 then -- Left mouse button
+        local gridX, gridY = self:snapToGrid(worldX, worldY)
+        local gridZ = self.appState.currentLevel
+        
+        -- Place block at current level
+        self.blockData:setBlock(gridX, gridY, gridZ, self.appState.selectedBlockType)
+    end
+end
+
+function PlaceTool:snapToGrid(worldX, worldY)
+    local gridSize = 20 -- Match renderer grid size
+    local gridX = math.floor(worldX / gridSize + 0.5)
+    local gridY = math.floor(worldY / gridSize + 0.5)
+    return gridX, gridY
+end
+
+return PlaceTool
 ```
 
-### 7. Tool System
+#### 6.3 Erase Tool (`EraseTool`)
+**File**: `src/tools/EraseTool.lua`
+```lua
+local BaseTool = require('src.tools.BaseTool')
 
-#### 7.1 Base Tool (`BaseTool`)
-```javascript
-abstract class BaseTool {
-  abstract onMouseDown(worldPos)
-  abstract onMouseMove(worldPos)
-  abstract onMouseUp(worldPos)
-  abstract onKeyDown(key)
-}
+local EraseTool = setmetatable({}, BaseTool)
+EraseTool.__index = EraseTool
+
+function EraseTool:new(blockData, appState)
+    local self = setmetatable(BaseTool:new('erase', blockData, appState), EraseTool)
+    return self
+end
+
+function EraseTool:onMousePressed(worldX, worldY, button)
+    if button == 1 then -- Left mouse button
+        local gridX, gridY = self:snapToGrid(worldX, worldY)
+        local gridZ = self.appState.currentLevel
+        
+        -- Remove block at current level
+        self.blockData:setBlock(gridX, gridY, gridZ, nil)
+    end
+end
+
+function EraseTool:snapToGrid(worldX, worldY)
+    local gridSize = 20
+    local gridX = math.floor(worldX / gridSize + 0.5)
+    local gridY = math.floor(worldY / gridSize + 0.5)
+    return gridX, gridY
+end
+
+return EraseTool
 ```
 
-#### 7.2 Block Placement Tool (`BlockPlacementTool`)
-```javascript
-class BlockPlacementTool extends BaseTool {
-  constructor(blockDataManager, currentBlockType) {
-    this.blockDataManager = blockDataManager
-    this.blockType = currentBlockType
-  }
-  
-  onMouseDown(worldPos) {
-    const {x, y, z} = this.snapToGrid(worldPos)
-    this.blockDataManager.setBlock(x, y, z, this.blockType)
-  }
-}
-```
+### 7. File Management
 
-## Data Flow Architecture
+#### 7.1 File Manager (`FileManager`)
+**File**: `src/utils/FileManager.lua`
+```lua
+local json = require('libs.json') -- External JSON library
 
-### 1. User Interaction Flow
-```
-User Input → InputController → Tool → BlockDataManager → StateManager → Renderers
-```
+local FileManager = {}
+FileManager.__index = FileManager
 
-### 2. View Switching Flow
-```
-UI Event → AppStateManager.setCurrentView() → All Renderers.render() → UI Update
-```
+function FileManager:new()
+    local self = setmetatable({}, FileManager)
+    return self
+end
 
-### 3. Block Modification Flow
-```
-Tool Action → BlockDataManager.setBlock() → History.push() → Dirty Region Marking → Renderer Update
-```
+function FileManager:saveProject(blockData, appState, filename)
+    local projectData = {
+        version = "1.0",
+        name = filename or "untitled",
+        created = os.time(),
+        dimensions = {x = 100, y = 100, z = 50},
+        currentView = appState.currentView,
+        currentLevel = appState.currentLevel,
+        blocks = self:serializeBlocks(blockData),
+        blockCount = blockData.blockCount
+    }
+    
+    local jsonString = json.encode(projectData)
+    local success = love.filesystem.write(filename .. '.mcd', jsonString)
+    
+    return success
+end
 
-## Performance Optimizations
+function FileManager:loadProject(filename)
+    local contents, size = love.filesystem.read(filename .. '.mcd')
+    if not contents then
+        return nil, "File not found"
+    end
+    
+    local success, projectData = pcall(json.decode, contents)
+    if not success then
+        return nil, "Invalid file format"
+    end
+    
+    return projectData
+end
 
-### 1. Rendering Optimizations
-- **Viewport Culling**: Only render blocks visible in current viewport
-- **Level Filtering**: For top view, only process blocks at current level ±1
-- **Instanced Rendering**: Use Three.js InstancedMesh for thousands of identical blocks
-- **Dirty Region Tracking**: Only re-render changed areas
+function FileManager:serializeBlocks(blockData)
+    local blocks = {}
+    for x, xTable in pairs(blockData.blocks) do
+        for y, yTable in pairs(xTable) do
+            for z, blockType in pairs(yTable) do
+                table.insert(blocks, {
+                    x = x, y = y, z = z,
+                    type = blockType
+                })
+            end
+        end
+    end
+    return blocks
+end
 
-### 2. Data Structure Optimizations
-- **Sparse Storage**: Map-based storage only for occupied blocks
-- **Spatial Indexing**: Octree for fast spatial queries
-- **Batch Operations**: Group multiple block changes
-- **Memory Pooling**: Reuse objects for frequent operations
+function FileManager:exportPNG(filename)
+    local screenshot = love.graphics.newScreenshot()
+    local imageData = screenshot:getData()
+    imageData:encode('png', filename .. '.png')
+end
 
-### 3. Memory Management
-```javascript
-class MemoryManager {
-  // Target: Support 500,000 blocks efficiently
-  maxBlocks = 500000
-  blockPool = [] // Reuse block objects
-  
-  allocateBlock() {
-    return this.blockPool.pop() || new Block()
-  }
-  
-  deallocateBlock(block) {
-    block.reset()
-    this.blockPool.push(block)
-  }
-}
+return FileManager
 ```
 
 ## File Structure
 
 ```
-src/
-├── core/
-│   ├── AppStateManager.js
-│   ├── BlockDataManager.js
-│   └── MemoryManager.js
-├── rendering/
-│   ├── BaseRenderer.js
-│   ├── TopViewRenderer.js
-│   ├── ThreeDRenderer.js
-│   ├── ElevationRenderer.js
-│   └── HatchPatternManager.js
-├── input/
-│   ├── InputController.js
-│   └── CameraController.js
-├── tools/
-│   ├── BaseTool.js
-│   ├── BlockPlacementTool.js
-│   ├── SelectionTool.js
-│   └── MeasurementTool.js
-├── ui/
-│   ├── UIManager.js
-│   └── components/
-└── utils/
-    ├── MathUtils.js
-    └── SpatialIndex.js
+minecraft-cad/
+├── main.lua                    # Love2D entry point
+├── conf.lua                    # Love2D configuration
+├── src/
+│   ├── core/
+│   │   ├── AppState.lua
+│   │   ├── BlockData.lua
+│   │   └── ViewManager.lua
+│   ├── rendering/
+│   │   ├── BaseRenderer.lua
+│   │   ├── TopViewRenderer.lua
+│   │   ├── IsometricRenderer.lua
+│   │   ├── ElevationRenderer.lua
+│   │   └── HatchPatterns.lua
+│   ├── input/
+│   │   └── InputHandler.lua
+│   ├── tools/
+│   │   ├── BaseTool.lua
+│   │   ├── PlaceTool.lua
+│   │   ├── EraseTool.lua
+│   │   └── ToolManager.lua
+│   ├── ui/
+│   │   ├── UIManager.lua
+│   │   ├── Sidebar.lua
+│   │   └── StatusBar.lua
+│   └── utils/
+│       ├── MathUtils.lua
+│       └── FileManager.lua
+├── libs/
+│   └── json.lua               # JSON library for save/load
+├── assets/
+│   ├── fonts/
+│   └── icons/
+└── README.md
 ```
 
-## Technology Stack Details
+## Love2D Entry Points
 
-### Core Technologies
-- **HTML5 Canvas**: 2D rendering (top/elevation views)
-- **WebGL/Three.js**: 3D rendering
-- **Vanilla JavaScript**: Core logic (ES6+ modules)
-- **Web Workers**: Background processing for large operations
+### Main Application (`main.lua`)
+```lua
+local AppState = require('src.core.AppState')
+local BlockData = require('src.core.BlockData')
+local ViewManager = require('src.core.ViewManager')
+local InputHandler = require('src.input.InputHandler')
+local ToolManager = require('src.tools.ToolManager')
+local UIManager = require('src.ui.UIManager')
 
-### Third-Party Libraries
-- **Three.js** (~600KB): 3D rendering and math utilities
-- **No other dependencies**: Keep bundle size minimal
+-- Global application state
+local appState
+local blockData
+local viewManager
+local inputHandler
+local toolManager
+local uiManager
 
-### Browser Requirements
-- Modern browsers supporting:
-  - WebGL 1.0
-  - ES6+ modules
-  - Canvas 2D
-  - Local Storage
+function love.load()
+    -- Initialize core systems
+    appState = AppState:new()
+    blockData = BlockData:new()
+    viewManager = ViewManager:new()
+    toolManager = ToolManager:new(blockData, appState)
+    inputHandler = InputHandler:new(appState, viewManager, toolManager)
+    uiManager = UIManager:new(appState, blockData)
+    
+    -- Set up Love2D
+    love.window.setTitle("MinecraftCAD")
+    love.graphics.setBackgroundColor(0.12, 0.22, 0.37) -- Blueprint blue background
+    
+    -- Set default view
+    appState:setCurrentView('top')
+end
 
-## Initialization Sequence
+function love.update(dt)
+    -- Update systems that need frame updates
+    uiManager:update(dt)
+end
 
-```javascript
-// 1. Initialize core systems
-const memoryManager = new MemoryManager()
-const blockDataManager = new BlockDataManager(memoryManager)
-const appStateManager = new AppStateManager()
+function love.draw()
+    -- Render current view
+    local currentRenderer = viewManager:getCurrentRenderer()
+    if currentRenderer then
+        currentRenderer:render(blockData, appState)
+    end
+    
+    -- Render UI overlay
+    uiManager:render()
+end
 
-// 2. Initialize rendering
-const topRenderer = new TopViewRenderer(topCanvas)
-const threeDRenderer = new ThreeDRenderer(threeDCanvas)
-const elevationRenderer = new ElevationRenderer(elevationCanvas)
+-- Input event handlers
+function love.mousepressed(x, y, button)
+    if not uiManager:handleMousePressed(x, y, button) then
+        inputHandler:mousepressed(x, y, button)
+    end
+end
 
-// 3. Initialize input and tools
-const cameraController = new CameraController()
-const inputController = new InputController(appStateManager, renderers)
-const toolManager = new ToolManager(blockDataManager)
+function love.mousereleased(x, y, button)
+    inputHandler:mousereleased(x, y, button)
+end
 
-// 4. Wire up the system
-appStateManager.connect(blockDataManager, renderers, toolManager)
-inputController.connect(cameraController, toolManager)
+function love.mousemoved(x, y)
+    inputHandler:mousemoved(x, y)
+end
 
-// 5. Initial render
-appStateManager.setCurrentView('top')
+function love.wheelmoved(x, y)
+    inputHandler:wheelmoved(x, y)
+end
+
+function love.keypressed(key)
+    inputHandler:keypressed(key)
+end
+
+function love.resize(w, h)
+    viewManager:handleResize(w, h)
+    uiManager:handleResize(w, h)
+end
 ```
 
-This architecture provides a solid foundation that can scale to handle the 100x100x50 build size while maintaining good performance and clean separation of concerns. The modular design also makes it easy to add new features like different block types, export formats, or additional view modes in the future.
+### Configuration (`conf.lua`)
+```lua
+function love.conf(t)
+    t.title = "MinecraftCAD"
+    t.version = "11.4"
+    t.window.width = 1200
+    t.window.height = 800
+    t.window.resizable = true
+    t.window.minwidth = 800
+    t.window.minheight = 600
+    
+    -- Enable required modules
+    t.modules.audio = false
+    t.modules.joystick = false
+    t.modules.physics = false
+    t.modules.sound = false
+    t.modules.video = false
+end
+```
+
+This Love2D architecture provides excellent performance for 2D rendering with proper separation of concerns and clean Lua module organization. The isometric 3D view gives you the 3D visualization you need without the complexity of WebGL, and the file structure is much simpler to work with than the JavaScript/Three.js approach.
