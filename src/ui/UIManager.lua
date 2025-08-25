@@ -25,12 +25,17 @@ function UIManager:new(viewport, appState, blockData)
     o.blockData = blockData
     o.hoverStates = {}
     o.viewManager = nil -- Will be set by main.lua
+    o.toolManager = nil -- Will be set by main.lua
     
     return o
 end
 
 function UIManager:setViewManager(viewManager)
     self.viewManager = viewManager
+end
+
+function UIManager:setToolManager(toolManager)
+    self.toolManager = toolManager
 end
 
 function UIManager:update(dt)
@@ -57,36 +62,37 @@ function UIManager:render()
 end
 
 function UIManager:drawToolbar()
-    local y = -LAYOUT.TOOLBAR_HEIGHT
-    local height = LAYOUT.TOOLBAR_HEIGHT
+    -- Position toolbar below the workspace header
+    local y = LAYOUT.WORKSPACE_HEADER_HEIGHT
+    local height = LAYOUT.TOOLBAR_HEIGHT + 25 -- Extra height for labels
     
     -- Toolbar background - match wireframe #1e3a5f
     love.graphics.setColor(0.118, 0.229, 0.373, 1.0)
-    love.graphics.rectangle('fill', 0, y, self.viewport.width, height)
+    love.graphics.rectangle('fill', LAYOUT.SIDEBAR_WIDTH, y, self.viewport.width - LAYOUT.SIDEBAR_WIDTH, height)
     
     -- Toolbar border - match wireframe #64b5f6
     love.graphics.setColor(0.392, 0.71, 0.965, 1)
-    love.graphics.rectangle('line', 0, y, self.viewport.width, height)
+    love.graphics.rectangle('line', LAYOUT.SIDEBAR_WIDTH, y, self.viewport.width - LAYOUT.SIDEBAR_WIDTH, height)
     
     -- Tool groups
-    local x = 20
+    local x = LAYOUT.SIDEBAR_WIDTH + 20
     local gap = 15
     
-    -- Place/Erase/Select tools
+    -- Place/Erase tools
     self:drawToolGroup(x, y + 5, {
-        {symbol = "■", tool = "place", title = "Place Block"},
-        {symbol = "⌫", tool = "erase", title = "Erase"},
-        {symbol = "⬚", tool = "select", title = "Select"}
+        {symbol = "■", tool = "place", title = "Place"},
+        {symbol = "⌫", tool = "erase", title = "Erase"}
     })
-    x = x + 120 + gap
+    x = x + 80 + gap
     
     -- Drawing tools
     self:drawToolGroup(x, y + 5, {
         {symbol = "╱", tool = "line", title = "Line"},
-        {symbol = "▢", tool = "rectangle", title = "Rectangle"},
+        {symbol = "▢", tool = "rectangle", title = "Rect"},
+        {symbol = "●", tool = "circle", title = "Circle"},
         {symbol = "▣", tool = "fill", title = "Fill"}
     })
-    x = x + 120 + gap
+    x = x + 160 + gap
     
     -- Utility tools
     self:drawToolGroup(x, y + 5, {
@@ -99,6 +105,7 @@ end
 function UIManager:drawToolGroup(x, y, tools)
     local toolSize = 35
     local gap = 5
+    local labelHeight = 20
     
     for i, tool in ipairs(tools) do
         local toolX = x + (i - 1) * (toolSize + gap)
@@ -123,11 +130,17 @@ function UIManager:drawToolGroup(x, y, tools)
         -- Tool symbol
         love.graphics.setColor(0.91, 0.957, 0.973, 1) -- #e8f4f8
         love.graphics.print(tool.symbol, toolX + 8, y + 8)
+        
+        -- Tool label below the button
+        love.graphics.setColor(0.91, 0.957, 0.973, 0.8) -- #e8f4f8 with 80% opacity
+        local labelX = toolX + (toolSize - love.graphics.getFont():getWidth(tool.title)) / 2
+        love.graphics.print(tool.title, labelX, y + toolSize + 2)
     end
     
     -- Right border for tool group
     love.graphics.setColor(0.392, 0.71, 0.965, 1) -- #64b5f6
-    love.graphics.line(x + 3 * toolSize + 2 * gap, y, x + 3 * toolSize + 2 * gap, y + toolSize)
+    local groupWidth = #tools * toolSize + (#tools - 1) * gap
+    love.graphics.line(x + groupWidth, y, x + groupWidth, y + toolSize + labelHeight)
 end
 
 function UIManager:drawSidebar()
@@ -390,19 +403,25 @@ function UIManager:updateHoverStates()
     end
     
     -- Check tool buttons
-    local tools = {"place", "erase", "select", "line", "rectangle", "fill", "measure", "pan", "zoom"}
-    local toolY = -LAYOUT.TOOLBAR_HEIGHT + 5
+    local tools = {"place", "erase", "line", "rectangle", "circle", "fill", "measure", "pan", "zoom"}
+    local toolY = LAYOUT.WORKSPACE_HEADER_HEIGHT + 5
     local toolSize = 35
-    local toolX = 20
     
-    for i, tool in ipairs(tools) do
-        local col = math.floor((i - 1) / 3)
-        local row = (i - 1) % 3
-        local x = toolX + col * (3 * toolSize + 2 * 5 + 15)
-        local y = toolY + row * (toolSize + 5)
-        
-        if self:isPointInRect(mouseX, mouseY, x, y, toolSize, toolSize) then
-            self.hoverStates[tool] = true
+    -- Define tool groups and their positions (matching the new toolbar layout)
+    local toolGroups = {
+        {startX = LAYOUT.SIDEBAR_WIDTH + 20, tools = {"place", "erase"}},
+        {startX = LAYOUT.SIDEBAR_WIDTH + 115, tools = {"line", "rectangle", "circle", "fill"}},
+        {startX = LAYOUT.SIDEBAR_WIDTH + 295, tools = {"measure", "pan", "zoom"}}
+    }
+    
+    for _, group in ipairs(toolGroups) do
+        for i, tool in ipairs(group.tools) do
+            local tx = group.startX + (i - 1) * (toolSize + 5)
+            local ty = toolY
+            
+            if self:isPointInRect(mouseX, mouseY, tx, ty, toolSize, toolSize) then
+                self.hoverStates[tool] = true
+            end
         end
     end
     
@@ -466,20 +485,26 @@ end
 function UIManager:handleMousePressed(x, y, button)
     if button == 1 then -- Left click
         -- Check tool button clicks
-        local tools = {"place", "erase", "select", "line", "rectangle", "fill", "measure", "pan", "zoom"}
-        local toolY = -LAYOUT.TOOLBAR_HEIGHT + 5
+        local tools = {"place", "erase", "line", "rectangle", "circle", "fill", "measure", "pan", "zoom"}
+        local toolY = LAYOUT.WORKSPACE_HEADER_HEIGHT + 5
         local toolSize = 35
-        local toolX = 20
         
-        for i, tool in ipairs(tools) do
-            local col = math.floor((i - 1) / 3)
-            local row = (i - 1) % 3
-            local tx = toolX + col * (3 * toolSize + 2 * 5 + 15)
-            local ty = toolY + row * (toolSize + 5)
-            
-            if self:isPointInRect(x, y, tx, ty, toolSize, toolSize) then
-                self:handleToolClick(tool)
-                return true
+        -- Define tool groups and their positions (matching the new toolbar layout)
+        local toolGroups = {
+            {startX = LAYOUT.SIDEBAR_WIDTH + 20, tools = {"place", "erase"}},
+            {startX = LAYOUT.SIDEBAR_WIDTH + 115, tools = {"line", "rectangle", "circle", "fill"}},
+            {startX = LAYOUT.SIDEBAR_WIDTH + 295, tools = {"measure", "pan", "zoom"}}
+        }
+        
+        for _, group in ipairs(toolGroups) do
+            for i, tool in ipairs(group.tools) do
+                local tx = group.startX + (i - 1) * (toolSize + 5)
+                local ty = toolY
+                
+                if self:isPointInRect(x, y, tx, ty, toolSize, toolSize) then
+                    self:handleToolClick(tool)
+                    return true
+                end
             end
         end
         
@@ -545,6 +570,11 @@ end
 
 function UIManager:handleToolClick(tool)
     self.appState:setActiveTool(tool)
+    
+    -- Also update the ToolManager directly
+    if self.toolManager then
+        self.toolManager:setCurrentTool(tool)
+    end
 end
 
 function UIManager:handleBlockTypeClick(blockType)

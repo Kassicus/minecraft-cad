@@ -5,7 +5,7 @@ PlaceTool.__index = PlaceTool
 
 function PlaceTool:new(blockData, appState)
     print("*** PLACE TOOL NEW CALLED ***")
-    local self = setmetatable(BaseTool:new('place', blockData, appState), PlaceTool)
+    local self = setmetatable(BaseTool:new('place', appState, blockData), PlaceTool)
     print("*** PLACE TOOL NEW COMPLETED ***")
     return self
 end

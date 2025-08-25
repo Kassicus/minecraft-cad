@@ -5,7 +5,7 @@ EraseTool.__index = EraseTool
 
 function EraseTool:new(blockData, appState)
     print("*** ERASE TOOL NEW CALLED ***")
-    local self = setmetatable(BaseTool:new('erase', blockData, appState), EraseTool)
+    local self = setmetatable(BaseTool:new('erase', appState, blockData), EraseTool)
     print("*** ERASE TOOL NEW COMPLETED ***")
     return self
 end

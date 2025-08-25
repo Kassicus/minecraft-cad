@@ -34,12 +34,15 @@ function love.load()
     }
     print(string.format("Viewport created: %dx%d", viewport.width, viewport.height))
     viewManager = ViewManager:new(viewport, appState, blockData)
-    toolManager = ToolManager:new(appState, blockData)
+    toolManager = ToolManager:new(blockData, appState)
     inputHandler = InputHandler:new(viewport, viewManager, toolManager, appState)
     uiManager = UIManager:new(viewport, appState, blockData)
     
     -- Connect UIManager with ViewManager for proper synchronization
     uiManager:setViewManager(viewManager)
+    
+    -- Connect UIManager with ToolManager for tool synchronization
+    uiManager:setToolManager(toolManager)
     
     -- Set current tool
     toolManager:setCurrentTool('place')
@@ -63,6 +66,12 @@ function love.draw()
     local currentRenderer = viewManager:getCurrentRenderer()
     if currentRenderer then
         currentRenderer:render(blockData, appState)
+    end
+    
+    -- Render current tool previews (for drawing tools)
+    local currentTool = toolManager:getCurrentTool()
+    if currentTool and currentTool.render then
+        currentTool:render()
     end
     
     -- Render UI on top

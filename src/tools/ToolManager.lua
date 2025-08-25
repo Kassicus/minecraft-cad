@@ -8,10 +8,18 @@ function ToolManager:new(blockData, appState)
     
     local PlaceTool = require('src.tools.PlaceTool')
     local EraseTool = require('src.tools.EraseTool')
+    local RectangleTool = require('src.tools.RectangleTool')
+    local CircleTool = require('src.tools.CircleTool')
+    local LineTool = require('src.tools.LineTool')
+    local FillTool = require('src.tools.FillTool')
     
     self.tools = {
         place = PlaceTool:new(blockData, appState),
-        erase = EraseTool:new(blockData, appState)
+        erase = EraseTool:new(blockData, appState),
+        rectangle = RectangleTool:new(blockData, appState),
+        circle = CircleTool:new(blockData, appState),
+        line = LineTool:new(blockData, appState),
+        fill = FillTool:new(blockData, appState)
     }
     
     self.currentTool = 'place'
