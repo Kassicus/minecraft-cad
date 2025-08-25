@@ -24,8 +24,13 @@ function UIManager:new(viewport, appState, blockData)
     o.appState = appState
     o.blockData = blockData
     o.hoverStates = {}
+    o.viewManager = nil -- Will be set by main.lua
     
     return o
+end
+
+function UIManager:setViewManager(viewManager)
+    self.viewManager = viewManager
 end
 
 function UIManager:update(dt)
@@ -432,10 +437,21 @@ function UIManager:updateHoverStates()
         end
     end
     
-    -- Check height buttons - adjusted to match new separator positioning
-    local heightStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 70 -- Increased from 50 to 70
-    self.hoverStates["heightDown"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
-    self.hoverStates["heightUp"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING + 40, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
+    -- Check height buttons - use same dynamic positioning as drawing code
+    local blockPanelHeight = LAYOUT.PANEL_HEADER_HEIGHT + 180
+    local viewStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
+    
+    -- Calculate buttonY the same way as in drawing code
+    local buttonY = viewStartY
+    for i = 1, 6 do -- 6 view buttons
+        buttonY = buttonY + LAYOUT.VIEW_BUTTON_HEIGHT + 8
+    end
+    
+    local separatorY = buttonY + 20
+    local heightButtonY = separatorY + 50
+    
+    self.hoverStates["heightDown"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING, heightButtonY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
+    self.hoverStates["heightUp"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING + 40, heightButtonY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
 end
 
 function UIManager:isPointInRect(px, py, rx, ry, rw, rh)
@@ -500,14 +516,25 @@ function UIManager:handleMousePressed(x, y, button)
             end
         end
         
-        -- Check height control clicks - adjusted to match new separator positioning
-        local heightStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 70 -- Increased from 50 to 70
-        if self:isPointInRect(x, y, LAYOUT.PANEL_PADDING, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE) then
+        -- Check height control clicks - use same dynamic positioning as drawing code
+        local blockPanelHeight = LAYOUT.PANEL_HEADER_HEIGHT + 180
+        local viewStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
+        
+        -- Calculate buttonY the same way as in drawing code
+        local buttonY = viewStartY
+        for i = 1, 6 do -- 6 view buttons
+            buttonY = buttonY + LAYOUT.VIEW_BUTTON_HEIGHT + 8
+        end
+        
+        local separatorY = buttonY + 20
+        local heightButtonY = separatorY + 50
+        
+        if self:isPointInRect(x, y, LAYOUT.PANEL_PADDING, heightButtonY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE) then
             self:handleHeightDownClick()
             return true
         end
         
-        if self:isPointInRect(x, y, LAYOUT.PANEL_PADDING + 40, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE) then
+        if self:isPointInRect(x, y, LAYOUT.PANEL_PADDING + 40, heightButtonY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE) then
             self:handleHeightUpClick()
             return true
         end
@@ -526,7 +553,11 @@ end
 
 function UIManager:handleViewControlClick(view)
     local viewKey = self:getViewKey(view)
+    -- Update both AppState and ViewManager
     self.appState:setCurrentView(viewKey)
+    if self.viewManager then
+        self.viewManager:setCurrentView(viewKey)
+    end
 end
 
 function UIManager:handleHeightUpClick()

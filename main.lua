@@ -38,6 +38,9 @@ function love.load()
     inputHandler = InputHandler:new(viewport, viewManager, toolManager, appState)
     uiManager = UIManager:new(viewport, appState, blockData)
     
+    -- Connect UIManager with ViewManager for proper synchronization
+    uiManager:setViewManager(viewManager)
+    
     -- Set current tool
     toolManager:setCurrentTool('place')
     

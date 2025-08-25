@@ -54,17 +54,24 @@ function InputHandler:mousemoved(x, y, dx, dy)
     -- Handle panning with middle mouse button
     if love.mouse.isDown(3) then -- Middle mouse button (3, not 2)
         local currentRenderer = self.viewManager:getCurrentRenderer()
-        if currentRenderer and currentRenderer.camera and currentRenderer.camera.x and currentRenderer.camera.y then
+        if currentRenderer and currentRenderer.camera then
+            -- Ensure camera has proper properties
+            if not currentRenderer.camera.x then currentRenderer.camera.x = 0 end
+            if not currentRenderer.camera.y then currentRenderer.camera.y = 0 end
+            if not currentRenderer.camera.zoom then currentRenderer.camera.zoom = 1.0 end
+            
             -- Calculate dx and dy if they're not provided
             if not dx or not dy then
                 dx = x - (self.lastMouseX or x)
                 dy = y - (self.lastMouseY or y)
             end
             
-            -- Only pan if we have valid deltas
-            if dx and dy then
-                currentRenderer.camera.x = currentRenderer.camera.x - dx
-                currentRenderer.camera.y = currentRenderer.camera.y - dy
+            -- Only pan if we have valid deltas and they're not zero
+            if dx and dy and (dx ~= 0 or dy ~= 0) then
+                -- Adjust panning sensitivity
+                local panSensitivity = 1.0 / currentRenderer.camera.zoom
+                currentRenderer.camera.x = currentRenderer.camera.x - dx * panSensitivity
+                currentRenderer.camera.y = currentRenderer.camera.y - dy * panSensitivity
             end
         end
     end
@@ -101,14 +108,28 @@ function InputHandler:keypressed(key)
     elseif key == '2' then
         self.viewManager:setCurrentView('isometric')
         self.appState:setCurrentView('isometric')
+    elseif key == '3' then
+        self.viewManager:setCurrentView('north')
+        self.appState:setCurrentView('north')
+    elseif key == '4' then
+        self.viewManager:setCurrentView('south')
+        self.appState:setCurrentView('south')
+    elseif key == '5' then
+        self.viewManager:setCurrentView('east')
+        self.appState:setCurrentView('east')
+    elseif key == '6' then
+        self.viewManager:setCurrentView('west')
+        self.appState:setCurrentView('west')
     elseif key == 'space' then
         self.toolManager:setCurrentTool('place')
     elseif key == 'e' then
         self.toolManager:setCurrentTool('erase')
     elseif key == 'up' then
-        self.appState:setCurrentLevel(math.min(49, self.appState.currentLevel + 1))
+        local newLevel = math.min(49, self.appState.currentLevel + 1)
+        self.appState:setCurrentLevel(newLevel)
     elseif key == 'down' then
-        self.appState:setCurrentLevel(math.max(0, self.appState.currentLevel - 1))
+        local newLevel = math.max(0, self.appState.currentLevel - 1)
+        self.appState:setCurrentLevel(newLevel)
     end
 end
 
