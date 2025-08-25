@@ -11,7 +11,7 @@ function BaseRenderer.new(viewport)
     o.camera = {
         x = 0,
         y = 0,
-        scale = 1
+        zoom = 1.0
     }
     
     print(string.format("BaseRenderer.new created object with viewport: %s", tostring(o.viewport)))

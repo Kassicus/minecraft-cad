@@ -140,8 +140,9 @@ function UIManager:drawSidebar()
     -- Block Types Panel
     self:drawBlockTypesPanel(x, y)
     
-    -- View Controls Panel
-    self:drawViewControlsPanel(x, y + 200)
+    -- View Controls Panel - positioned after block types panel
+    local blockPanelHeight = LAYOUT.PANEL_HEADER_HEIGHT + 180 -- Block types panel height
+    self:drawViewControlsPanel(x, y + blockPanelHeight)
 end
 
 function UIManager:drawBlockTypesPanel(x, y)
@@ -157,9 +158,9 @@ function UIManager:drawBlockTypesPanel(x, y)
     love.graphics.setColor(0.91, 0.957, 0.973, 1) -- #e8f4f8
     love.graphics.print("Block Types", x + 12, y + 12)
     
-    -- Panel content
+    -- Panel content - increased height to fit all 5 blocks
     local contentY = y + LAYOUT.PANEL_HEADER_HEIGHT
-    local contentHeight = 140
+    local contentHeight = 180 -- Increased from 140 to 180
     
     -- Panel content background
     love.graphics.setColor(0.07, 0.125, 0.196, 1.0) -- #122032
@@ -251,23 +252,24 @@ function UIManager:drawViewControlsPanel(x, y)
     local buttonY = contentY + LAYOUT.PANEL_PADDING
     
     for i, view in ipairs(views) do
-        local isSelected = self.appState.currentView == view:lower():gsub(" ", "")
+        local viewKey = self:getViewKey(view)
+        local isSelected = self.appState.currentView == viewKey
         local isHovered = self.hoverStates[view]
         
         self:drawViewButton(x + LAYOUT.PANEL_PADDING, buttonY, LAYOUT.SIDEBAR_WIDTH - LAYOUT.PANEL_PADDING * 2, LAYOUT.VIEW_BUTTON_HEIGHT, view, isSelected, isHovered)
         buttonY = buttonY + LAYOUT.VIEW_BUTTON_HEIGHT + 8
     end
     
-    -- Height controls separator
-    local separatorY = buttonY + 12
+    -- Height controls separator - moved down to avoid overlapping with view buttons
+    local separatorY = buttonY + 20 -- Increased from 12 to 20 for better spacing
     love.graphics.setColor(0.392, 0.71, 0.965, 1) -- #64b5f6
     love.graphics.line(x + LAYOUT.PANEL_PADDING, separatorY, x + LAYOUT.SIDEBAR_WIDTH - LAYOUT.PANEL_PADDING, separatorY)
     
-    -- Height display
+    -- Height display - adjusted position to match new separator
     love.graphics.setColor(0.91, 0.957, 0.973, 1) -- #e8f4f8
     love.graphics.print("Level: " .. self.appState.currentLevel, x + LAYOUT.PANEL_PADDING, separatorY + 20)
     
-    -- Height buttons
+    -- Height buttons - adjusted position to match new separator
     local heightButtonY = separatorY + 50
     self:drawHeightButton(x + LAYOUT.PANEL_PADDING, heightButtonY, "-", self.hoverStates["heightDown"])
     self:drawHeightButton(x + LAYOUT.PANEL_PADDING + 40, heightButtonY, "+", self.hoverStates["heightUp"])
@@ -333,9 +335,9 @@ function UIManager:drawWorkspaceHeader()
     love.graphics.setColor(0.392, 0.71, 0.965, 1) -- #64b5f6
     love.graphics.rectangle('line', LAYOUT.SIDEBAR_WIDTH, y, self.viewport.width - LAYOUT.SIDEBAR_WIDTH, height)
     
-    -- Project title
+    -- Project title - show "Untitled" instead of hardcoded name
     love.graphics.setColor(0.91, 0.957, 0.973, 1) -- #e8f4f8
-    love.graphics.print("Castle_Tower_v1.mcd", LAYOUT.SIDEBAR_WIDTH + 20, y + 12)
+    love.graphics.print("Untitled", LAYOUT.SIDEBAR_WIDTH + 20, y + 12)
 end
 
 function UIManager:drawStatusBar()
@@ -366,8 +368,8 @@ function UIManager:drawStatusBar()
     end
     love.graphics.print(string.format("Level: %d", self.appState.currentLevel), leftX + 120, y + 8)
     
-    -- Right status info
-    local rightX = self.viewport.width - 200
+    -- Right status info - adjusted positioning to ensure visibility
+    local rightX = self.viewport.width - 250 -- Increased from 200 to 250 for better spacing
     love.graphics.print(string.format("Blocks: %d", self.blockData:getBlockCount()), rightX, y + 8)
     love.graphics.print("Zoom: 100%", rightX + 80, y + 8)
     love.graphics.print(string.format("Tool: %s", self.appState.activeTool or "None"), rightX + 160, y + 8)
@@ -417,7 +419,8 @@ function UIManager:updateHoverStates()
     
     -- Check view buttons
     local views = {"Top View", "3D View", "North Elevation", "South Elevation", "East Elevation", "West Elevation"}
-    local viewStartY = 200 + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
+    local blockPanelHeight = LAYOUT.PANEL_HEADER_HEIGHT + 180
+    local viewStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
     
     for i, view in ipairs(views) do
         local y = viewStartY + (i - 1) * (LAYOUT.VIEW_BUTTON_HEIGHT + 8)
@@ -429,8 +432,8 @@ function UIManager:updateHoverStates()
         end
     end
     
-    -- Check height buttons
-    local heightStartY = 200 + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 50
+    -- Check height buttons - adjusted to match new separator positioning
+    local heightStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 70 -- Increased from 50 to 70
     self.hoverStates["heightDown"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
     self.hoverStates["heightUp"] = self:isPointInRect(mouseX, mouseY, LAYOUT.PANEL_PADDING + 40, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE)
 end
@@ -483,7 +486,8 @@ function UIManager:handleMousePressed(x, y, button)
         
         -- Check view control clicks
         local views = {"Top View", "3D View", "North Elevation", "South Elevation", "East Elevation", "West Elevation"}
-        local viewStartY = 200 + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
+        local blockPanelHeight = LAYOUT.PANEL_HEADER_HEIGHT + 180
+        local viewStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + LAYOUT.PANEL_PADDING
         
         for i, view in ipairs(views) do
             local vy = viewStartY + (i - 1) * (LAYOUT.VIEW_BUTTON_HEIGHT + 8)
@@ -496,8 +500,8 @@ function UIManager:handleMousePressed(x, y, button)
             end
         end
         
-        -- Check height control clicks
-        local heightStartY = 200 + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 50
+        -- Check height control clicks - adjusted to match new separator positioning
+        local heightStartY = blockPanelHeight + LAYOUT.PANEL_HEADER_HEIGHT + 200 + LAYOUT.PANEL_PADDING + 70 -- Increased from 50 to 70
         if self:isPointInRect(x, y, LAYOUT.PANEL_PADDING, heightStartY, LAYOUT.HEIGHT_BUTTON_SIZE, LAYOUT.HEIGHT_BUTTON_SIZE) then
             self:handleHeightDownClick()
             return true
@@ -521,15 +525,7 @@ function UIManager:handleBlockTypeClick(blockType)
 end
 
 function UIManager:handleViewControlClick(view)
-    local viewMap = {
-        ["Top View"] = "top",
-        ["3D View"] = "isometric",
-        ["North Elevation"] = "north",
-        ["South Elevation"] = "south",
-        ["East Elevation"] = "east",
-        ["West Elevation"] = "west"
-    }
-    local viewKey = viewMap[view] or "top"
+    local viewKey = self:getViewKey(view)
     self.appState:setCurrentView(viewKey)
 end
 
@@ -541,6 +537,23 @@ end
 function UIManager:handleHeightDownClick()
     local newLevel = math.max(0, self.appState.currentLevel - 1)
     self.appState:setCurrentLevel(newLevel)
+end
+
+function UIManager:getViewKey(viewName)
+    if viewName == "Top View" then
+        return "top"
+    elseif viewName == "3D View" then
+        return "isometric"
+    elseif viewName == "North Elevation" then
+        return "north"
+    elseif viewName == "South Elevation" then
+        return "south"
+    elseif viewName == "East Elevation" then
+        return "east"
+    elseif viewName == "West Elevation" then
+        return "west"
+    end
+    return "top" -- Default to top view
 end
 
 return UIManager

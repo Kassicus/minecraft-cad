@@ -54,7 +54,7 @@ function InputHandler:mousemoved(x, y, dx, dy)
     -- Handle panning with middle mouse button
     if love.mouse.isDown(3) then -- Middle mouse button (3, not 2)
         local currentRenderer = self.viewManager:getCurrentRenderer()
-        if currentRenderer and currentRenderer.camera then
+        if currentRenderer and currentRenderer.camera and currentRenderer.camera.x and currentRenderer.camera.y then
             -- Calculate dx and dy if they're not provided
             if not dx or not dy then
                 dx = x - (self.lastMouseX or x)
@@ -77,7 +77,7 @@ end
 function InputHandler:wheelmoved(x, y)
     -- Handle zoom
     local currentRenderer = self.viewManager:getCurrentRenderer()
-    if currentRenderer and currentRenderer.camera then
+    if currentRenderer and currentRenderer.camera and currentRenderer.camera.zoom then
         local zoomFactor = 1.1
         
         if y > 0 then
