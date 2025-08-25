@@ -2,37 +2,56 @@ local BlockData = {}
 BlockData.__index = BlockData
 
 function BlockData:new()
-    local self = setmetatable({}, BlockData)
-    self.blocks = {} -- Sparse 3D array: [x][y][z] = blockType
-    self.blockCount = 0
-    self.bounds = {minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0}
-    self.hasBlocks = false -- Flag to check if any blocks exist
-    self.maxBlocks = 500000 -- Maximum total blocks allowed
-    return self
+    local o = {}
+    setmetatable(o, self)
+    self.__index = self
+    
+    o.blocks = {} -- [x][y][z] = blockType
+    o.hasBlocks = false
+    o.blockCount = 0
+    o.bounds = {minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0}
+    
+    -- Remove default test blocks - start with clean grid
+    -- o:setBlock(0, 0, 0, "blockA")
+    -- o:setBlock(1, 0, 0, "blockB") 
+    -- o:setBlock(0, 1, 0, "blockC")
+    -- o:setBlock(-1, 0, 0, "blockD")
+    -- o:setBlock(0, -1, 0, "blockE")
+    
+    return o
 end
 
 function BlockData:setBlock(x, y, z, blockType)
-    -- Coordinate validation (allow negative coordinates, limit Z to 0-49)
-    if z < 0 or z >= 50 then
-        return false, "Z coordinate out of bounds (0-49)"
+    -- Validate coordinates
+    if z < 0 or z > 49 then
+        return false, "Z coordinate out of range (0-49)"
     end
     
-    -- Block count limit check
-    if not self:getBlock(x, y, z) and blockType and self.blockCount >= self.maxBlocks then
-        return false, "Would exceed " .. self.maxBlocks .. " block limit"
+    -- Check block limit
+    if self.blockCount >= 500000 then
+        return false, "Maximum block limit reached (500,000)"
     end
     
-    -- Initialize nested tables if needed
-    if not self.blocks[x] then self.blocks[x] = {} end
-    if not self.blocks[x][y] then self.blocks[x][y] = {} end
+    -- Initialize coordinate arrays if needed
+    if not self.blocks[x] then
+        self.blocks[x] = {}
+    end
+    if not self.blocks[x][y] then
+        self.blocks[x][y] = {}
+    end
     
-    -- Set block and update count
+    -- Check if we're replacing an existing block
     local wasEmpty = (self.blocks[x][y][z] == nil)
+    
+    -- Set the block
     self.blocks[x][y][z] = blockType
     
+    -- Update counts and flags
     if wasEmpty and blockType then
         self.blockCount = self.blockCount + 1
         self.hasBlocks = true
+        -- Update bounds when adding a new block
+        self:updateBounds(x, y, z)
     elseif not wasEmpty and not blockType then
         self.blockCount = self.blockCount - 1
         if self.blockCount == 0 then
@@ -40,10 +59,27 @@ function BlockData:setBlock(x, y, z, blockType)
         end
     end
     
-    -- Update bounds
-    self:updateBounds(x, y, z)
+    -- Clean block setting without debug output
+    return true
+end
+
+function BlockData:removeBlock(x, y, z)
+    -- Check if block exists
+    if not self.blocks[x] or not self.blocks[x][y] or not self.blocks[x][y][z] then
+        return false, "No block at specified coordinates"
+    end
     
-    print(string.format("BlockData: Block set at (%d,%d,%d) = %s, total count: %d", x, y, z, blockType, self.blockCount))
+    -- Remove the block
+    self.blocks[x][y][z] = nil
+    self.blockCount = self.blockCount - 1
+    
+    -- Update flags
+    if self.blockCount == 0 then
+        self.hasBlocks = false
+        -- Reset bounds when no blocks remain
+        self.bounds = {minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0}
+    end
+    
     return true
 end
 

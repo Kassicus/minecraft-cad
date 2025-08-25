@@ -11,21 +11,28 @@ function PlaceTool:new(blockData, appState)
 end
 
 function PlaceTool:onMousePressed(worldX, worldY, button)
-    if button == 1 then -- Left mouse button
-        print(string.format("PlaceTool: Received world coordinates (%.2f, %.2f)", worldX, worldY))
-        
+    if button == 1 then -- Left click only
+        -- Snap to grid
         local gridX, gridY = self:snapToGrid(worldX, worldY)
-        local gridZ = self.appState.currentLevel
         
-        print(string.format("PlaceTool: After grid snapping (%d, %d), level %d", gridX, gridY, gridZ))
-        print(string.format("PlaceTool: Selected block type: %s", self.appState.selectedBlockType))
+        -- Get current level from app state
+        local level = self.appState.currentLevel
         
-        -- Place block at current level (no coordinate limits for X and Y)
-        local success, message = self.blockData:setBlock(gridX, gridY, gridZ, self.appState.selectedBlockType)
+        -- Get selected block type
+        local blockType = self.appState.selectedBlockType
+        if not blockType then
+            return
+        end
+        
+        -- Place the block
+        local success = self.blockData:setBlock(gridX, gridY, level, blockType)
+        
         if success then
-            print(string.format("PlaceTool: SUCCESS - Block placed at (%d, %d, %d): %s", gridX, gridY, gridZ, self.appState.selectedBlockType))
+            -- Block placed successfully
+            return true
         else
-            print(string.format("PlaceTool: FAILED - %s", message))
+            -- Failed to place block
+            return false
         end
     end
 end

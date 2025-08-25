@@ -41,12 +41,12 @@ function love.load()
     -- Set current tool
     toolManager:setCurrentTool('place')
     
-    -- Add some test blocks to demonstrate the centered, dynamic coordinate system
-    blockData:setBlock(0, 0, 0, 'blockA')
-    blockData:setBlock(1, 0, 0, 'blockB')
-    blockData:setBlock(0, 1, 0, 'blockC')
-    blockData:setBlock(-1, 0, 0, 'blockD')
-    blockData:setBlock(0, -1, 0, 'blockE')
+    -- Start with clean grid - no test blocks
+    -- blockData:setBlock(0, 0, 0, 'blockA')
+    -- blockData:setBlock(1, 0, 0, 'blockB')
+    -- blockData:setBlock(0, 1, 0, 'blockC')
+    -- blockData:setBlock(-1, 0, 0, 'blockD')
+    -- blockData:setBlock(0, -1, 0, 'blockE')
     
     print("=== MINECRAFT CAD READY ===")
 end

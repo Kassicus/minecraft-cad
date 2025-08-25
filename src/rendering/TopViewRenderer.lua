@@ -8,14 +8,11 @@ TopViewRenderer.__index = TopViewRenderer
 setmetatable(TopViewRenderer, {__index = BaseRenderer})
 
 function TopViewRenderer:new(viewport)
-    print(string.format("TopViewRenderer:new called with viewport: %s", tostring(viewport)))
     local o = BaseRenderer.new(viewport)
-    print(string.format("After BaseRenderer.new, o.viewport: %s", tostring(o.viewport)))
     
     -- Ensure viewport is preserved before changing metatable
     local savedViewport = o.viewport
     local savedCamera = o.camera
-    print(string.format("Saved viewport: %s, saved camera: %s", tostring(savedViewport), tostring(savedCamera)))
     
     setmetatable(o, self)
     self.__index = self
@@ -23,7 +20,6 @@ function TopViewRenderer:new(viewport)
     -- Restore the fields that might have been lost
     o.viewport = savedViewport
     o.camera = savedCamera
-    print(string.format("After restore, o.viewport: %s, o.camera: %s", tostring(o.viewport), tostring(o.camera)))
     
     o.gridSize = 20 -- pixels per block
     o.hatchPatterns = HatchPatterns:new()
@@ -35,16 +31,21 @@ end
 
 function TopViewRenderer:render(blockData, appState)
     love.graphics.push()
-    love.graphics.translate(self.viewport.width / 2, self.viewport.height / 2)
+    
+    -- Account for left sidebar (280px width)
+    local sidebarWidth = 280
+    
+    -- Draw main canvas background - match wireframe #0a1420
+    love.graphics.setColor(0.039, 0.078, 0.125, 1.0)
+    love.graphics.rectangle('fill', sidebarWidth, 0, self.viewport.width - sidebarWidth, self.viewport.height)
+    
+    love.graphics.translate(sidebarWidth + self.viewport.width / 2, self.viewport.height / 2)
+    
     -- Temporarily disable camera transformation for testing
     -- love.graphics.scale(self.camera.zoom)
     -- love.graphics.translate(-self.camera.x, -self.camera.y)
     
-    -- Debug: Draw camera position indicator
-    love.graphics.setColor(0.0, 1.0, 0.0, 0.8) -- Green camera indicator
-    love.graphics.circle('line', 0, 0, 10)
-    love.graphics.print(string.format("Cam(%.1f,%.1f)", self.camera.x, self.camera.y), -20, -20)
-    
+    -- Clean grid without debug information
     self:drawGrid(blockData)
     self:drawBlocksAtLevel(blockData, appState.currentLevel)
     self:drawGhostBlocks(blockData, appState.currentLevel)
@@ -62,13 +63,13 @@ function TopViewRenderer:render(blockData, appState)
 end
 
 function TopViewRenderer:drawGrid(blockData)
-    -- Minimal grid test - just draw a few simple lines
-    love.graphics.setColor(0.4, 0.7, 0.96, 0.8) -- Blueprint blue, more visible
-    love.graphics.setLineWidth(2)
+    -- Grid lines - match wireframe blueprint blue #64b5f6 with proper visibility
+    love.graphics.setColor(0.392, 0.71, 0.965, 0.3) -- Increased from 0.1 to 0.3
+    love.graphics.setLineWidth(1)
     
-    -- Draw a simple 5x5 grid around origin
+    -- Draw a larger grid to cover more area
     local gridSize = self.gridSize
-    local extent = 2 -- Only 5 lines (-2 to +2)
+    local extent = 10 -- Increased from 2 to 10 for more grid coverage
     
     -- Horizontal lines
     for i = -extent, extent do
@@ -82,16 +83,8 @@ function TopViewRenderer:drawGrid(blockData)
         love.graphics.line(x, -extent * gridSize, x, extent * gridSize)
     end
     
-    -- Draw origin marker
-    love.graphics.setColor(1.0, 0.8, 0.0, 1.0) -- Gold origin marker
-    love.graphics.circle('fill', 0, 0, 5)
-    
-    -- Draw coordinate markers
-    love.graphics.setColor(1.0, 0.0, 0.0, 1.0) -- Red test markers
-    love.graphics.circle('fill', gridSize, 0, 3)      -- (1,0) grid position
-    love.graphics.circle('fill', 0, gridSize, 3)      -- (0,1) grid position
-    love.graphics.circle('fill', -gridSize, 0, 3)     -- (-1,0) grid position
-    love.graphics.circle('fill', 0, -gridSize, 3)     -- (0,-1) grid position
+    -- Clean grid - no origin marker or coordinate indicators
+    -- Just the grid lines for a professional appearance
     
     -- Reset line width
     love.graphics.setLineWidth(1)
@@ -158,8 +151,8 @@ function TopViewRenderer:drawBlock(x, y, blockType, opacity)
         -- Draw block with hatch pattern
         self.hatchPatterns:drawPattern(screenX, screenY, self.gridSize, self.gridSize, blockDef.pattern, blockDef.color)
         
-        -- Draw border
-        love.graphics.setColor(0.4, 0.7, 0.96, opacity) -- Blueprint blue border
+        -- Draw border - match wireframe blueprint blue #64b5f6
+        love.graphics.setColor(0.392, 0.71, 0.965, opacity)
         love.graphics.setLineWidth(1)
         love.graphics.rectangle('line', screenX, screenY, self.gridSize, self.gridSize)
     end
@@ -186,17 +179,19 @@ function TopViewRenderer:drawPreviewBlock(x, y, blockType)
 end
 
 function TopViewRenderer:screenToWorld(screenX, screenY)
+    -- Account for left sidebar (280px width)
+    local sidebarWidth = 280
+    local adjustedX = screenX - sidebarWidth
+    
     -- Simplified coordinate transformation (no camera offset/zoom for testing)
-    local worldX = screenX - self.viewport.width / 2
+    local worldX = adjustedX - self.viewport.width / 2
     local worldY = screenY - self.viewport.height / 2
     
     -- Convert to world coordinates (can be negative, not snapped to grid yet)
     worldX = worldX / self.gridSize
     worldY = worldY / self.gridSize
     
-    print(string.format("TopViewRenderer: Screen(%d,%d) -> World(%.2f,%.2f)", 
-        screenX, screenY, worldX, worldY))
-    
+    -- Clean coordinate conversion without debug output
     return worldX, worldY
 end
 

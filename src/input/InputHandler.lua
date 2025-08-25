@@ -1,41 +1,36 @@
 local InputHandler = {}
 InputHandler.__index = InputHandler
 
-function InputHandler:new(appState, viewManager, toolManager)
+function InputHandler:new(viewport, viewManager, toolManager, appState)
     local self = setmetatable({}, InputHandler)
-    self.appState = appState
+    self.viewport = viewport
     self.viewManager = viewManager
     self.toolManager = toolManager
+    self.appState = appState
     
     self.mouseX = 0
     self.mouseY = 0
     self.mousePressed = false
+    self.lastMouseX = 0
+    self.lastMouseY = 0
     
     return self
 end
 
 function InputHandler:mousepressed(x, y, button)
-    print(string.format("InputHandler: Mouse pressed at (%d, %d)", x, y))
-    
     self.mouseX, self.mouseY = x, y
     self.mousePressed = true
     
     -- Convert screen coordinates to world coordinates
     local currentRenderer = self.viewManager:getCurrentRenderer()
     if currentRenderer then
-        print("InputHandler: Converting coordinates...")
         local worldX, worldY = currentRenderer:screenToWorld(x, y)
         
         -- Pass to current tool
         local currentTool = self.toolManager:getCurrentTool()
         if currentTool then
-            print(string.format("InputHandler: Calling tool %s", currentTool.name))
             currentTool:onMousePressed(worldX, worldY, button)
-        else
-            print("InputHandler: No current tool found!")
         end
-    else
-        print("InputHandler: No current renderer found!")
     end
 end
 
@@ -51,27 +46,32 @@ function InputHandler:mousereleased(x, y, button)
     end
 end
 
-function InputHandler:mousemoved(x, y)
-    local dx, dy = x - self.mouseX, y - self.mouseY
-    self.mouseX, self.mouseY = x, y
+function InputHandler:mousemoved(x, y, dx, dy)
+    -- Update mouse position in app state
+    self.appState.mouseX = x
+    self.appState.mouseY = y
     
-    -- Handle camera panning when middle mouse is held
-    if love.mouse.isDown(3) then -- Middle mouse button
+    -- Handle panning with middle mouse button
+    if love.mouse.isDown(3) then -- Middle mouse button (3, not 2)
         local currentRenderer = self.viewManager:getCurrentRenderer()
         if currentRenderer and currentRenderer.camera then
-            currentRenderer.camera.x = currentRenderer.camera.x - dx / currentRenderer.camera.zoom
-            currentRenderer.camera.y = currentRenderer.camera.y - dy / currentRenderer.camera.zoom
+            -- Calculate dx and dy if they're not provided
+            if not dx or not dy then
+                dx = x - (self.lastMouseX or x)
+                dy = y - (self.lastMouseY or y)
+            end
+            
+            -- Only pan if we have valid deltas
+            if dx and dy then
+                currentRenderer.camera.x = currentRenderer.camera.x - dx
+                currentRenderer.camera.y = currentRenderer.camera.y - dy
+            end
         end
     end
     
-    -- Pass to current tool
-    local currentRenderer = self.viewManager:getCurrentRenderer()
-    local worldX, worldY = currentRenderer:screenToWorld(x, y)
-    
-    local currentTool = self.toolManager:getCurrentTool()
-    if currentTool then
-        currentTool:onMouseMoved(worldX, worldY)
-    end
+    -- Store current position for next frame
+    self.lastMouseX = x
+    self.lastMouseY = y
 end
 
 function InputHandler:wheelmoved(x, y)
